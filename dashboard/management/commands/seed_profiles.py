@@ -1,27 +1,44 @@
 from django.core.management.base import BaseCommand
+from django.db import transaction
 from dashboard.models import Customer
 
 class Command(BaseCommand):
-    help = 'Seeds 100 male and 100 female profiles matching matchmaking-data.js'
+    help = 'Seeds 100 male and 100 female customer profiles into the database'
 
     def handle(self, *args, **options):
         status_tags = [
             'New Lead', 'Profile Review', 'Active Search', 'Matches Sent',
             'Meeting Scheduled', 'Engagement In Progress', 'On Hold', 'Closed'
         ]
-        male_first_names = ['Aarav','Vivaan','Aditya','Vihaan','Arjun','Sai','Reyansh','Ayaan','Krishna','Ishaan','Shaurya','Atharv','Advait','Pranav','Kabir','Rohan','Karan','Rahul','Nikhil','Siddharth']
-        female_first_names = ['Aadhya','Ananya','Diya','Ira','Kavya','Meera','Priya','Riya','Saanvi','Anika','Sneha','Naina','Pooja','Aisha','Tanya','Neha','Isha','Avni','Kiara','Shruti']
-        last_names = ['Sharma','Mehta','Iyer','Singh','Desai','Kapoor','Reddy','Joshi','Nair','Bose','Patel','Chatterjee','Malhotra','Rao','Agarwal','Menon','Gupta','Bhat','Kulkarni','Saxena']
+        male_first_names = [
+            'Aarav', 'Vivaan', 'Aditya', 'Vihaan', 'Arjun', 'Sai', 'Reyansh',
+            'Ayaan', 'Krishna', 'Ishaan', 'Shaurya', 'Atharv', 'Advait',
+            'Pranav', 'Kabir', 'Rohan', 'Karan', 'Rahul', 'Nikhil',
+            'Siddharth', 'Dev', 'Armaan', 'Yash', 'Manav', 'Varun'
+        ]
+        female_first_names = [
+            'Aadhya', 'Ananya', 'Diya', 'Ira', 'Kavya', 'Meera', 'Priya',
+            'Riya', 'Saanvi', 'Anika', 'Sneha', 'Naina', 'Pooja', 'Aisha',
+            'Tanya', 'Neha', 'Isha', 'Avni', 'Kiara', 'Shruti', 'Mira',
+            'Rhea', 'Anushka', 'Tanvi', 'Suhani'
+        ]
+        last_names = [
+            'Sharma', 'Mehta', 'Iyer', 'Singh', 'Desai', 'Kapoor', 'Reddy',
+            'Joshi', 'Nair', 'Bose', 'Patel', 'Chatterjee', 'Malhotra', 'Rao',
+            'Agarwal', 'Menon', 'Gupta', 'Bhat', 'Kulkarni', 'Saxena',
+            'Mukherjee', 'Pillai', 'Khan', 'Shetty', 'Chopra'
+        ]
         indian_cities = [
             ['Mumbai','Maharashtra'], ['Pune','Maharashtra'], ['Delhi','Delhi'], ['Bengaluru','Karnataka'],
             ['Hyderabad','Telangana'], ['Chennai','Tamil Nadu'], ['Ahmedabad','Gujarat'], ['Jaipur','Rajasthan'],
-            ['Kolkata','West Bengal'], ['Kochi','Kerala'], ['Lucknow','Uttar Pradesh'], ['Chandigarh','Punjab']
+            ['Kolkata','West Bengal'], ['Kochi','Kerala'], ['Lucknow','Uttar Pradesh'], ['Chandigarh','Punjab'],
+            ['Indore','Madhya Pradesh'], ['Surat','Gujarat'], ['Noida','Uttar Pradesh'], ['Gurugram','Haryana']
         ]
         religions = ['Hindu','Muslim','Sikh','Christian','Jain','Buddhist']
-        castes = ['Brahmin','Khatri','Kayastha','Agarwal','Maratha','Reddy','Iyer','Nair','Patel','Rajput']
-        education_list = ['B.Tech','MBA','MBBS','CA','M.Tech','B.Com','M.Com','B.Arch','LLB','PhD']
-        companies = ['TCS','Infosys','HDFC Bank','Deloitte','Google India','Reliance','ICICI Bank','Zomato','Wipro','Tata Steel']
-        designations = ['Product Manager','Software Engineer','Consultant','Financial Analyst','Doctor','Architect','Marketing Lead','Data Scientist','Chartered Accountant','HR Manager']
+        castes = ['Brahmin','Khatri','Kayastha','Agarwal','Maratha','Reddy','Iyer','Nair','Patel','Rajput','Menon','Baniya']
+        education_list = ['B.Tech','MBA','MBBS','CA','M.Tech','B.Com','M.Com','B.Arch','LLB','PhD','MCA','BDS']
+        companies = ['TCS','Infosys','HDFC Bank','Deloitte','Google India','Reliance','ICICI Bank','Zomato','Wipro','Tata Steel','Accenture','Mahindra']
+        designations = ['Product Manager','Software Engineer','Consultant','Financial Analyst','Doctor','Architect','Marketing Lead','Data Scientist','Chartered Accountant','HR Manager','Lawyer','Professor']
         languages_pool = ['Hindi','English','Tamil','Telugu','Marathi','Gujarati','Bengali','Malayalam','Kannada','Punjabi']
 
         def build_profile(id_val, gender, first_names_list):
@@ -63,15 +80,16 @@ class Command(BaseCommand):
                 email=f"{first_name.lower()}.{last_name.lower()}{id_val + 1}@soulsync.ai"
             )
 
-        self.stdout.write("Deleting existing customer profiles...")
-        Customer.objects.all().delete()
+        with transaction.atomic():
+            self.stdout.write("Deleting existing customer profiles...")
+            Customer.objects.all().delete()
 
-        self.stdout.write("Generating male profiles...")
-        male_profiles = [build_profile(i, 'Male', male_first_names) for i in range(100)]
-        Customer.objects.bulk_create(male_profiles)
+            self.stdout.write("Generating male profiles...")
+            male_profiles = [build_profile(i, 'Male', male_first_names) for i in range(100)]
+            Customer.objects.bulk_create(male_profiles)
 
-        self.stdout.write("Generating female profiles...")
-        female_profiles = [build_profile(i, 'Female', female_first_names) for i in range(100)]
-        Customer.objects.bulk_create(female_profiles)
+            self.stdout.write("Generating female profiles...")
+            female_profiles = [build_profile(i, 'Female', female_first_names) for i in range(100)]
+            Customer.objects.bulk_create(female_profiles)
 
         self.stdout.write(self.style.SUCCESS('Successfully seeded 100 male and 100 female profiles.'))
