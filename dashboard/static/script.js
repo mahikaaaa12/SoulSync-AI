@@ -711,7 +711,7 @@ function viewClient(index) {
   }
 
   // Status tag in timeline section
-  const statusTimeline = document.querySelector('.status-timeline');
+  const statusTimeline = document.getElementById('matchmakingStatusTimeline');
   if (statusTimeline) {
     const statusStep = capitalize(c.status === 'active' ? 'Active Search' : c.status === 'matched' ? 'Matches Sent' : 'Profile Review');
     statusTimeline.innerHTML = `
@@ -738,6 +738,8 @@ function viewClient(index) {
     `;
   }
 
+  renderCustomerActivityTimeline(c);
+
   // Update matches page sub-heading
   const matchesSub = document.querySelector('#page-matches .matches-header p');
   if (matchesSub) matchesSub.textContent = `AI-curated compatibility matches for ${c.name}`;
@@ -745,6 +747,39 @@ function viewClient(index) {
   loadMatchSuggestions(c.id);
 
   showPage('profile');
+}
+
+function renderCustomerActivityTimeline(customer) {
+  const activityTimeline = document.getElementById('customerActivityTimeline');
+  if (!activityTimeline) return;
+
+  const isPending = customer.status === 'pending';
+  const isActive = customer.status === 'active';
+  const isMatched = customer.status === 'matched';
+  const isInactive = customer.status === 'inactive';
+
+  activityTimeline.innerHTML = `
+    <div class="timeline-step done">
+      <div class="step-dot"></div>
+      <div class="step-body"><p class="step-title">Profile Created</p><p class="step-date">${customer.updated}</p></div>
+    </div>
+    <div class="timeline-step ${isPending ? 'active' : 'done'}">
+      <div class="step-dot ${isPending ? 'pulse' : ''}"></div>
+      <div class="step-body"><p class="step-title">Consultation Completed</p><p class="step-date">${isPending ? 'In Progress' : 'Completed'}</p></div>
+    </div>
+    <div class="timeline-step ${isMatched || isActive ? 'done' : 'pending'}">
+      <div class="step-dot"></div>
+      <div class="step-body"><p class="step-title">Match Sent</p><p class="step-date">${isMatched || isActive ? 'Sent to client' : 'Pending'}</p></div>
+    </div>
+    <div class="timeline-step ${isMatched ? 'done' : isActive ? 'active' : 'pending'}">
+      <div class="step-dot ${isActive ? 'pulse' : ''}"></div>
+      <div class="step-body"><p class="step-title">Meeting Scheduled</p><p class="step-date">${isMatched ? 'Scheduled' : isActive ? 'In Progress' : 'Pending'}</p></div>
+    </div>
+    <div class="timeline-step ${isInactive ? 'done' : isMatched ? 'active' : 'pending'}">
+      <div class="step-dot ${isMatched ? 'pulse' : ''}"></div>
+      <div class="step-body"><p class="step-title">Feedback Received</p><p class="step-date">${isInactive ? 'Received' : isMatched ? 'Awaiting feedback' : 'Pending'}</p></div>
+    </div>
+  `;
 }
 
 /* ─── KPI Counter Animation ─────────────────── */
