@@ -46,3 +46,52 @@ def login_view(request):
 
 def index(request):
     return render(request, "index.html")
+
+
+from django.http import JsonResponse
+from .models import Customer
+
+def api_customers(request):
+    customers = Customer.objects.all()
+    data = []
+    
+    # Map database status_tag to UI CSS status badge values
+    status_map = {
+        'New Lead': 'pending',
+        'Profile Review': 'pending',
+        'Active Search': 'active',
+        'Matches Sent': 'active',
+        'Meeting Scheduled': 'active',
+        'Engagement In Progress': 'matched',
+        'On Hold': 'inactive',
+        'Closed': 'inactive'
+    }
+    
+    for c in customers:
+        data.append({
+            'id': c.customer_id,
+            'firstName': c.first_name,
+            'lastName': c.last_name,
+            'name': f"{c.first_name} {c.last_name}",
+            'gender': c.gender,
+            'age': c.age,
+            'city': c.city,
+            'state': c.state,
+            'religion': c.religion,
+            'caste': c.caste,
+            'height': c.height,
+            'education': c.education,
+            'company': c.company,
+            'designation': c.designation,
+            'income': c.income,
+            'maritalStatus': c.marital_status,
+            'languages': [lang.strip() for lang in c.languages.split(',')] if c.languages else [],
+            'wantsKids': c.wants_kids,
+            'openToRelocate': c.open_to_relocate,
+            'openToPets': c.open_to_pets,
+            'statusTag': c.status_tag,
+            'status': status_map.get(c.status_tag, 'active'),
+            'updated': '2 days ago', # placeholder for demo parity
+            'email': c.email
+        })
+    return JsonResponse(data, safe=False)

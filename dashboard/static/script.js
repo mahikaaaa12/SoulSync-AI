@@ -346,16 +346,7 @@ function initials(name) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 }
 
-const clients = [
-  { name: 'Priya Sharma',     age: 31, city: 'Mumbai',    status: 'active',   updated: '2 days ago',  email: 'priya@email.com' },
-  { name: 'Rohan Mehta',      age: 33, city: 'Pune',      status: 'matched',  updated: '1 week ago',  email: 'rohan@email.com' },
-  { name: 'Ananya Iyer',      age: 28, city: 'Chennai',   status: 'pending',  updated: '3 days ago',  email: 'ananya@email.com' },
-  { name: 'Vikram Singh',     age: 35, city: 'Delhi',     status: 'active',   updated: 'Today',       email: 'vikram@email.com' },
-  { name: 'Sneha Desai',      age: 29, city: 'Ahmedabad', status: 'matched',  updated: '5 days ago',  email: 'sneha@email.com' },
-  { name: 'Arjun Kapoor',     age: 34, city: 'Bangalore', status: 'active',   updated: 'Yesterday',   email: 'arjun@email.com' },
-  { name: 'Kavya Reddy',      age: 27, city: 'Hyderabad', status: 'pending',  updated: '4 days ago',  email: 'kavya@email.com' },
-  { name: 'Nikhil Joshi',     age: 36, city: 'Jaipur',    status: 'inactive', updated: '2 weeks ago', email: 'nikhil@email.com' },
-];
+let clients = [];
 
 const meetings = [
   { day: '14', mon: 'Jan', names: 'Priya S. × Arjun M.',    time: '11:00 AM', type: '#22C55E' },
@@ -776,15 +767,39 @@ function observeAnimations() {
 
 /* ─── Init ──────────────────────────────────── */
 function init() {
-  renderClientTable('clientTableBody');
-  renderClientTable('clientTableBody2');
-  renderMeetingsList();
-  renderMatchSuggestions();
-  renderNotesTimeline();
-  observeAnimations();
-  setTimeout(animateCounters, 300);
-  initAuth();
-  initNotifications();
+  fetch('/api/customers/')
+    .then(response => response.json())
+    .then(data => {
+      // Populate candidate pools in window
+      window.maleProfiles = data.filter(c => c.gender === 'Male');
+      window.femaleProfiles = data.filter(c => c.gender === 'Female');
+
+      // Filter and order active clients to match existing hardcoded lists
+      const activeRosterNames = [
+        'Priya Sharma', 'Rohan Mehta', 'Ananya Iyer', 'Vikram Singh',
+        'Sneha Desai', 'Arjun Kapoor', 'Kavya Reddy', 'Nikhil Joshi'
+      ];
+      clients = activeRosterNames.map(name => data.find(c => c.name === name)).filter(Boolean);
+
+      // Fallback in case of mismatch
+      if (clients.length === 0) {
+        clients = data.slice(0, 8);
+      }
+
+      // Initial Render calls
+      renderClientTable('clientTableBody');
+      renderClientTable('clientTableBody2');
+      renderMeetingsList();
+      renderMatchSuggestions();
+      renderNotesTimeline();
+      observeAnimations();
+      setTimeout(animateCounters, 300);
+      initAuth();
+      initNotifications();
+    })
+    .catch(err => {
+      console.error('Error fetching customer database:', err);
+    });
 }
 
 document.addEventListener('DOMContentLoaded', init);
