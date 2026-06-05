@@ -402,6 +402,18 @@ img {
   border: 2px solid rgba(212,175,55,0.3);
 }
 
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.dropdown-menu.show {
+  display: block;
+}
+
 /* ─── Pages ─────────────────────────────────── */
 .page {
   display: none;

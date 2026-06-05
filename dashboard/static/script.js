@@ -31,6 +31,13 @@ function applyUserToUI(user) {
 
   // Topbar avatar
   const topbarAvatar = document.getElementById('topbarAvatar');
+  const menu = document.getElementById('dropdownMenu');
+
+  if (topbarAvatar && menu) {
+    topbarAvatar.addEventListener('click', () => {
+      menu.classList.toggle('show');
+    });
+  }
   if (topbarAvatar) topbarAvatar.textContent = initials2;
 
   // Dashboard welcome subtitle
