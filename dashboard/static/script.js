@@ -313,6 +313,9 @@ function showPage(pageId) {
   // Run page-specific init
   if (pageId === 'analytics') renderAnalytics();
   if (pageId === 'meetings')  renderMeetingsFull();
+  if (pageId === 'matches') {
+    loadMatchSuggestions(currentMatchCustomerId || clients[0]?.id);
+  }
 
   if (window.innerWidth <= 768) {
     sidebar && sidebar.classList.remove('mobile-open');
@@ -347,19 +350,16 @@ function initials(name) {
 }
 
 let clients = [];
+let allCustomers = [];
+let activeStatusFilter = '';
+let currentMatchCustomerId = '';
+let matchSuggestions = [];
 
 const meetings = [
   { day: '14', mon: 'Jan', names: 'Priya S. × Arjun M.',    time: '11:00 AM', type: '#22C55E' },
   { day: '16', mon: 'Jan', names: 'Rohan M. × Kavya R.',    time: '03:00 PM', type: '#D4AF37' },
   { day: '19', mon: 'Jan', names: 'Vikram S. × Sneha D.',   time: '02:30 PM', type: '#22C55E' },
   { day: '22', mon: 'Jan', names: 'Ananya I. × Nikhil J.',  time: '10:00 AM', type: '#F59E0B' },
-];
-
-const matchSuggestions = [
-  { name: 'Arjun Mehta',  sub: '34 yrs · Mumbai', compat: 92, facts: [['Occupation','CA'],['Height','5\'10"'],['Religion','Hindu'],['Edu','CA Final']], avatarIdx: 1, high: true  },
-  { name: 'Karan Bose',   sub: '36 yrs · Pune',   compat: 81, facts: [['Occupation','IAS Officer'],['Height','5\'11"'],['Religion','Hindu'],['Edu','UPSC 2019']], avatarIdx: 3, high: true  },
-  { name: 'Dev Nair',     sub: '32 yrs · Hyderabad', compat: 74, facts: [['Occupation','Doctor'],['Height','5\'9"'],['Religion','Hindu'],['Edu','MBBS, MD']], avatarIdx: 4, high: false },
-  { name: 'Siddharth P.', sub: '33 yrs · Bangalore', compat: 68, facts: [['Occupation','Architect'],['Height','5\'10"'],['Religion','Hindu'],['Edu','B.Arch']], avatarIdx: 5, high: false },
 ];
 
 const notes = [
@@ -374,6 +374,16 @@ const notes = [
 function renderClientTable(tbodyId) {
   const tbody = document.getElementById(tbodyId);
   if (!tbody) return;
+  if (clients.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align:center;color:var(--warm-gray);padding:24px;">
+          No clients found
+        </td>
+      </tr>
+    `;
+    return;
+  }
   tbody.innerHTML = clients.map((c, i) => {
     const av = getAvatarStyle(i);
     return `
@@ -420,20 +430,32 @@ function renderMeetingsList() {
 function renderMatchSuggestions() {
   const grid = document.getElementById('matchesGrid');
   if (!grid) return;
-  grid.innerHTML = matchSuggestions.map(m => {
-    const av = getAvatarStyle(m.avatarIdx);
+  if (matchSuggestions.length === 0) {
+    grid.innerHTML = `
+      <div class="match-card">
+        <div class="match-name">No match suggestions found</div>
+        <div class="match-sub">Try selecting another client profile.</div>
+      </div>
+    `;
+    return;
+  }
+  grid.innerHTML = matchSuggestions.map((m, i) => {
+    const av = getAvatarStyle(i + 1);
     const facts = m.facts.map(f => `
       <div class="match-fact">
-        <div class="match-fact-label">${f[0]}</div>
-        <div>${f[1]}</div>
+        <div class="match-fact-label">${escapeHtml(f[0])}</div>
+        <div>${escapeHtml(f[1])}</div>
       </div>
+    `).join('');
+    const reasons = (m.explanation || []).map(reason => `
+      <li>${escapeHtml(reason)}</li>
     `).join('');
     return `
       <div class="match-card ${m.high ? 'high-compat' : ''}">
         <span class="match-compat-badge ${m.compat >= 85 ? 'compat-high' : 'compat-med'}">${m.compat}% Match</span>
         <div class="match-avatar" style="background:${av.bg};color:${av.color}">${initials(m.name)}</div>
-        <div class="match-name">${m.name}</div>
-        <div class="match-sub">${m.sub}</div>
+        <div class="match-name">${escapeHtml(m.name)}</div>
+        <div class="match-sub">${escapeHtml(m.sub)}</div>
         <div class="match-facts">${facts}</div>
         <div class="compat-bar-wrapper">
           <div class="compat-bar-label">
@@ -444,12 +466,53 @@ function renderMatchSuggestions() {
             <div class="compat-bar-fill" style="width:${m.compat}%"></div>
           </div>
         </div>
+        <button class="why-match-toggle" type="button" onclick="toggleMatchReasons(this)">
+          Why this match?
+        </button>
+        <div class="why-match-panel">
+          <ul>${reasons}</ul>
+        </div>
         <button class="send-match-btn" onclick="handleSendMatch(this)">
           ✦ Send Match Introduction
         </button>
       </div>
     `;
   }).join('');
+}
+
+function loadMatchSuggestions(customerId) {
+  if (!customerId) {
+    matchSuggestions = [];
+    renderMatchSuggestions();
+    return Promise.resolve([]);
+  }
+
+  currentMatchCustomerId = customerId;
+  return fetch(`/api/customers/${encodeURIComponent(customerId)}/matches/`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Match API request failed with ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      matchSuggestions = data;
+      renderMatchSuggestions();
+      return data;
+    })
+    .catch(err => {
+      console.error('Error fetching match suggestions:', err);
+      matchSuggestions = [];
+      renderMatchSuggestions();
+      return [];
+    });
+}
+
+function toggleMatchReasons(btn) {
+  const panel = btn.nextElementSibling;
+  if (!panel) return;
+  const isOpen = panel.classList.toggle('open');
+  btn.classList.toggle('open', isOpen);
 }
 
 function handleSendMatch(btn) {
@@ -678,6 +741,8 @@ function viewClient(index) {
   // Update matches page sub-heading
   const matchesSub = document.querySelector('#page-matches .matches-header p');
   if (matchesSub) matchesSub.textContent = `AI-curated compatibility matches for ${c.name}`;
+  currentMatchCustomerId = c.id;
+  loadMatchSuggestions(c.id);
 
   showPage('profile');
 }
@@ -735,13 +800,98 @@ saveNote && saveNote.addEventListener('click', () => {
   newNote.author = window._currentUserName || newNote.author;
 });
 
-/* ─── Filter Tabs ───────────────────────────── */
-document.querySelectorAll('.filter-tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    tab.closest('.filter-tabs').querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
+/* ─── Directory Filters ─────────────────────── */
+function getDirectoryFilters() {
+  return {
+    status: activeStatusFilter,
+    gender: document.getElementById('genderFilter')?.value || '',
+    city: document.getElementById('cityFilter')?.value || '',
+    religion: document.getElementById('religionFilter')?.value || '',
+    marital_status: document.getElementById('maritalFilter')?.value || '',
+    sort_age: document.getElementById('ageSort')?.value || ''
+  };
+}
+
+function customerApiUrl(filters = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.append(key, value);
   });
-});
+  const query = params.toString();
+  return query ? `/api/customers/?${query}` : '/api/customers/';
+}
+
+function populateFilterSelect(selectId, values) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  const firstOption = select.options[0];
+  const selectedValue = select.value;
+  select.innerHTML = '';
+  select.appendChild(firstOption);
+  values.forEach(value => {
+    if (!value) return;
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = value;
+    select.appendChild(option);
+  });
+  select.value = values.includes(selectedValue) ? selectedValue : '';
+}
+
+function populateDirectoryFilters(data) {
+  const uniqueSorted = key => [...new Set(data.map(c => c[key]).filter(Boolean))].sort();
+  populateFilterSelect('genderFilter', uniqueSorted('gender'));
+  populateFilterSelect('cityFilter', uniqueSorted('city'));
+  populateFilterSelect('religionFilter', uniqueSorted('religion'));
+  populateFilterSelect('maritalFilter', uniqueSorted('maritalStatus'));
+}
+
+function applyCustomerData(data) {
+  clients = data;
+  window.maleProfiles = clients.filter(c => c.gender === 'Male');
+  window.femaleProfiles = clients.filter(c => c.gender === 'Female');
+  renderClientTable('clientTableBody');
+  renderClientTable('clientTableBody2');
+}
+
+function loadCustomers(filters = {}) {
+  return fetch(customerApiUrl(filters))
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Customer API request failed with ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      applyCustomerData(data);
+      return data;
+    })
+    .catch(err => {
+      console.error('Error fetching customer database:', err);
+      applyCustomerData([]);
+      return [];
+    });
+}
+
+function initDirectoryFilters() {
+  populateDirectoryFilters(allCustomers);
+
+  document.querySelectorAll('.filter-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      tab.closest('.filter-tabs').querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      activeStatusFilter = tab.dataset.status || '';
+      loadCustomers(getDirectoryFilters());
+    });
+  });
+
+  ['genderFilter', 'cityFilter', 'religionFilter', 'maritalFilter', 'ageSort'].forEach(id => {
+    const control = document.getElementById(id);
+    control && control.addEventListener('change', () => {
+      loadCustomers(getDirectoryFilters());
+    });
+  });
+}
 
 /* ─── Search ────────────────────────────────── */
 const searchInput = document.getElementById('searchInput');
@@ -767,38 +917,24 @@ function observeAnimations() {
 
 /* ─── Init ──────────────────────────────────── */
 function init() {
-  fetch('/api/customers/')
-    .then(response => response.json())
+  loadCustomers()
     .then(data => {
-      // Populate candidate pools in window
-      window.maleProfiles = data.filter(c => c.gender === 'Male');
-      window.femaleProfiles = data.filter(c => c.gender === 'Female');
-
-      // Filter and order active clients to match existing hardcoded lists
-      const activeRosterNames = [
-        'Priya Sharma', 'Rohan Mehta', 'Ananya Iyer', 'Vikram Singh',
-        'Sneha Desai', 'Arjun Kapoor', 'Kavya Reddy', 'Nikhil Joshi'
-      ];
-      clients = activeRosterNames.map(name => data.find(c => c.name === name)).filter(Boolean);
-
-      // Fallback in case of mismatch
-      if (clients.length === 0) {
-        clients = data.slice(0, 8);
-      }
+      allCustomers = data;
+      initDirectoryFilters();
 
       // Initial Render calls
-      renderClientTable('clientTableBody');
-      renderClientTable('clientTableBody2');
       renderMeetingsList();
-      renderMatchSuggestions();
+      if (clients[0]) {
+        currentMatchCustomerId = clients[0].id;
+        loadMatchSuggestions(currentMatchCustomerId);
+      } else {
+        renderMatchSuggestions();
+      }
       renderNotesTimeline();
       observeAnimations();
       setTimeout(animateCounters, 300);
       initAuth();
       initNotifications();
-    })
-    .catch(err => {
-      console.error('Error fetching customer database:', err);
     });
 }
 
@@ -807,4 +943,13 @@ document.addEventListener('DOMContentLoaded', init);
 /* ─── Utility ───────────────────────────────── */
 function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }

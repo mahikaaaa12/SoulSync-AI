@@ -191,9 +191,28 @@
             </div>
             <div class="panel-actions">
               <div class="filter-tabs">
-                <button class="filter-tab active">All</button>
-                <button class="filter-tab">Active</button>
-                <button class="filter-tab">Matched</button>
+                <button class="filter-tab active" data-status="">All</button>
+                <button class="filter-tab" data-status="active">Active</button>
+                <button class="filter-tab" data-status="matched">Matched</button>
+              </div>
+              <div class="directory-filters">
+                <select class="filter-select" id="genderFilter" aria-label="Filter by gender">
+                  <option value="">Gender</option>
+                </select>
+                <select class="filter-select" id="cityFilter" aria-label="Filter by city">
+                  <option value="">City</option>
+                </select>
+                <select class="filter-select" id="religionFilter" aria-label="Filter by religion">
+                  <option value="">Religion</option>
+                </select>
+                <select class="filter-select" id="maritalFilter" aria-label="Filter by marital status">
+                  <option value="">Marital Status</option>
+                </select>
+                <select class="filter-select" id="ageSort" aria-label="Sort by age">
+                  <option value="">Age</option>
+                  <option value="asc">Youngest First</option>
+                  <option value="desc">Oldest First</option>
+                </select>
               </div>
               <button class="btn-primary small" onclick="showPage('profile')">+ Add Client</button>
             </div>
