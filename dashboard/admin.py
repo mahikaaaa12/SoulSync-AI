@@ -14,8 +14,8 @@ class CustomerAdmin(admin.ModelAdmin):
 
 @admin.register(Match)
 class MatchAdmin(admin.ModelAdmin):
-    list_display = ('customer', 'candidate', 'compatibility_score', 'high_compatibility', 'status')
-    list_filter = ('high_compatibility', 'status')
+    list_display = ('customer', 'candidate', 'compatibility_score', 'status', 'sent_by', 'sent_at')
+    list_filter = ('high_compatibility', 'status', 'sent_at')
     search_fields = ('customer__first_name', 'customer__last_name', 'candidate__first_name', 'candidate__last_name')
 
 @admin.register(Meeting)

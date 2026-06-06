@@ -1,5 +1,6 @@
 import json
 
+from django.db.models import Avg, Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib import messages
@@ -8,7 +9,9 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from .matchmaking import calculate_compatibility
-from .models import Customer, Meeting
+from .introductions import generate_match_introduction
+from .models import Customer, Meeting, Match, Matchmaker
+
 
 def login_view(request):
     if request.method == "POST":
@@ -35,7 +38,6 @@ def login_view(request):
         username = request.POST.get("username")
         password = request.POST.get("password")
 
-        # Dummy login for assignment
         if username == "admin" and password == "admin123":
             return redirect("index")
 
@@ -99,7 +101,6 @@ def next_customer_id():
     last_customer = Customer.objects.exclude(customer_id__isnull=True).order_by('-id').first()
     if not last_customer or not last_customer.customer_id:
         return 'C001'
-
     digits = ''.join(ch for ch in last_customer.customer_id if ch.isdigit())
     next_number = int(digits or last_customer.id or 0) + 1
     return f'C{next_number:03d}'
@@ -164,8 +165,7 @@ def api_customers(request):
         return JsonResponse(customer_to_dict(customer), status=201)
 
     customers = Customer.objects.all()
-    
-    # Map database status_tag to UI CSS status badge values
+
     status_map = {
         'New Lead': 'pending',
         'Profile Review': 'pending',
@@ -205,7 +205,7 @@ def api_customers(request):
         customers = customers.order_by('-age', 'first_name', 'last_name')
     else:
         customers = customers.order_by('first_name', 'last_name')
-    
+
     data = [customer_to_dict(c) for c in customers]
     return JsonResponse(data, safe=False)
 
@@ -263,15 +263,35 @@ def api_customer_matches(request, customer_id):
     suggestions = []
     for candidate in candidates:
         compatibility = calculate_compatibility(customer, candidate)
+        score = compatibility.get('score', 0)
+        explanations = compatibility.get('explanation', [])
         suggestions.append({
             'id': candidate.customer_id,
             'name': candidate.name,
             'sub': f"{candidate.age} yrs · {candidate.city}",
-            'compat': compatibility.get('score', 0),
-            'high': compatibility.get('score', 0) >= 85,
-            'compatibility_score': compatibility.get('score', 0),
+            'compat': score,
+            'high': score >= 85,
+            'compatibility_score': score,
             'compatibility_breakdown': compatibility.get('breakdown', {}),
-            'explanation': compatibility.get('explanation', []),
+            'explanation': explanations,
+            'introduction': generate_match_introduction(
+                customer,
+                candidate,
+                score=score,
+                explanations=explanations,
+            ),
+            'profile': {
+                'education': candidate.education or '',
+                'designation': candidate.designation or '',
+                'company': candidate.company or '',
+                'wantsKids': candidate.wants_kids,
+                'openToRelocate': candidate.open_to_relocate,
+                'languages': [
+                    lang.strip()
+                    for lang in (candidate.languages or '').split(',')
+                    if lang.strip()
+                ],
+            },
             'facts': [
                 ['Occupation', candidate.designation or '—'],
                 ['Height', candidate.height or '—'],
@@ -283,3 +303,165 @@ def api_customer_matches(request, customer_id):
     suggestions.sort(key=lambda match: match['compat'], reverse=True)
     return JsonResponse(suggestions[:4], safe=False)
 
+
+def resolve_matchmaker(request, payload=None):
+    """Resolve the matchmaker who sent a match from auth or request payload."""
+    user = getattr(request, 'user', None)
+    if user and user.is_authenticated:
+        try:
+            return user.matchmaker_profile
+        except Matchmaker.DoesNotExist:
+            name = user.get_full_name().strip() or user.username
+            email = user.email or f"{user.username}@soulsync.local"
+            return Matchmaker.objects.create(user=user, name=name, email=email)
+
+    if payload:
+        name = (payload.get('matchmakerName') or '').strip()
+        if name:
+            email = (payload.get('matchmakerEmail') or '').strip()
+            if not email:
+                slug = name.lower().replace(' ', '.')
+                email = f"{slug}@soulsync.local"
+            matchmaker, _ = Matchmaker.objects.get_or_create(
+                email=email,
+                defaults={'name': name},
+            )
+            return matchmaker
+    return None
+
+
+def match_to_history_dict(match):
+    sent_at = match.sent_at or match.created_at
+    return {
+        'id': match.id,
+        'candidateId': match.candidate.customer_id,
+        'candidateName': match.candidate.name,
+        'candidateAge': match.candidate.age,
+        'candidateCity': match.candidate.city,
+        'candidateDesignation': match.candidate.designation or '—',
+        'compatibilityScore': match.compatibility_score,
+        'highCompatibility': match.high_compatibility,
+        'status': match.status,
+        'sentAt': sent_at.strftime('%b %d, %Y'),
+        'sentBy': match.sent_by.name if match.sent_by else '—',
+        'createdAt': sent_at.strftime('%b %d, %Y'),
+    }
+
+
+def api_send_match(request, customer_id):
+    """
+    POST: Record a match as Sent, promote customer status to 'Matches Sent'.
+    GET:  Return match history (all sent matches) for a customer, latest first.
+    """
+    customer = get_object_or_404(Customer, customer_id=customer_id)
+
+    if request.method == 'POST':
+        try:
+            payload = json.loads(request.body.decode('utf-8'))
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON payload.'}, status=400)
+
+        candidate_id = payload.get('candidateId')
+        if not candidate_id:
+            return JsonResponse({'error': 'candidateId is required.'}, status=400)
+
+        candidate = get_object_or_404(Customer, customer_id=candidate_id)
+        matchmaker = resolve_matchmaker(request, payload)
+        now = timezone.now()
+
+        match, created = Match.objects.get_or_create(
+            customer=customer,
+            candidate=candidate,
+            defaults={
+                'compatibility_score': payload.get('compatibilityScore', 0),
+                'high_compatibility': payload.get('compatibilityScore', 0) >= 85,
+                'status': 'Sent',
+                'sent_by': matchmaker,
+                'sent_at': now,
+            }
+        )
+        if not created:
+            match.status = 'Sent'
+            match.compatibility_score = payload.get('compatibilityScore', match.compatibility_score)
+            match.high_compatibility = match.compatibility_score >= 85
+            match.sent_by = matchmaker
+            match.sent_at = now
+            match.save()
+
+        # Promote customer status if not already further along
+        promotable = ['New Lead', 'Profile Review', 'Active Search']
+        if customer.status_tag in promotable:
+            customer.status_tag = 'Matches Sent'
+            customer.save(update_fields=['status_tag', 'updated_at'])
+
+        return JsonResponse(match_to_history_dict(match), status=201)
+
+    matches = (
+        Match.objects.filter(customer=customer)
+        .exclude(status='Pending')
+        .select_related('candidate', 'sent_by')
+        .order_by('-sent_at', '-created_at')
+    )
+    return JsonResponse([match_to_history_dict(m) for m in matches], safe=False)
+
+
+CUSTOMER_STATUS_ORDER = [
+    'New Lead',
+    'Profile Review',
+    'Active Search',
+    'Matches Sent',
+    'Meeting Scheduled',
+    'Engagement In Progress',
+    'On Hold',
+    'Closed',
+]
+
+
+def api_analytics(request):
+    """Aggregate dashboard analytics from existing database records."""
+    status_counts = {
+        row['status_tag']: row['count']
+        for row in Customer.objects.values('status_tag').annotate(count=Count('id'))
+    }
+
+    status_distribution = [
+        {'label': label, 'count': status_counts.get(label, 0)}
+        for label in CUSTOMER_STATUS_ORDER
+        if status_counts.get(label, 0) > 0
+    ]
+
+    for label, count in status_counts.items():
+        if label not in CUSTOMER_STATUS_ORDER and count > 0:
+            status_distribution.append({'label': label, 'count': count})
+
+    sent_matches = Match.objects.filter(status='Sent').count()
+    accepted_matches = Match.objects.filter(status='Accepted').count()
+    rejected_matches = Match.objects.filter(status='Rejected').count()
+    pending_matches = Match.objects.filter(status='Pending').count()
+    total_matches = Match.objects.count()
+    decided_matches = accepted_matches + rejected_matches
+    acceptance_rate = round((accepted_matches / decided_matches) * 100) if decided_matches else 0
+
+    return JsonResponse({
+        'summary': {
+            'totalCustomers': Customer.objects.count(),
+            'activeSearch': status_counts.get('Active Search', 0),
+            'matchesSent': sent_matches,
+            'meetingsScheduled': Meeting.objects.filter(status='Scheduled').count(),
+            'newLeads': status_counts.get('New Lead', 0),
+            'closedProfiles': status_counts.get('Closed', 0),
+        },
+        'statusDistribution': status_distribution,
+        'matchMetrics': {
+            'sent': sent_matches,
+            'accepted': accepted_matches,
+            'rejected': rejected_matches,
+            'pending': pending_matches,
+            'total': total_matches,
+            'acceptanceRate': acceptance_rate,
+            'highCompatibility': Match.objects.filter(high_compatibility=True).exclude(status='Pending').count(),
+            'averageCompatibility': round(
+                Match.objects.exclude(status='Pending').aggregate(avg=Avg('compatibility_score'))['avg'] or 0
+            ),
+        },
+    })

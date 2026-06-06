@@ -392,7 +392,7 @@ const pages = {
   notes: { title: "Notes", sub: "Session notes and matchmaker observations." },
   analytics: {
     title: "Analytics",
-    sub: "Performance overview for this quarter.",
+    sub: "Live metrics from your matchmaking database.",
   },
   settings: { title: "Settings", sub: "Manage your account and preferences." },
 };
@@ -469,6 +469,7 @@ let allCustomers = [];
 let activeStatusFilter = "";
 let currentMatchCustomerId = "";
 let matchSuggestions = [];
+let sentMatchCandidateIds = new Set();
 
 let meetings = [
   {
@@ -754,6 +755,170 @@ function renderWorkspaceActivity() {
     .join("");
 }
 
+/* ─── Match compatibility presentation ─────────── */
+
+const COMPAT_FACTOR_HINTS = {
+  religion: ['religion', 'religious', 'faith', 'values'],
+  caste: ['caste', 'cultural', 'background'],
+  age: ['age'],
+  height: ['height'],
+  income: ['income'],
+  education: ['education'],
+  education_compatibility: ['education'],
+  location: ['city', 'state', 'location'],
+  languages: ['language'],
+  wants_kids: ['children', 'kids', 'child'],
+  desire_for_children: ['children', 'child', 'desire'],
+  open_to_pets: ['pet'],
+  open_to_relocate: ['relocation', 'relocate', 'location'],
+  relocation_preferences: ['relocation', 'relocate'],
+  profession_similarity: ['profession', 'designation', 'company', 'field'],
+  values: ['religious', 'cultural', 'values', 'caste', 'religion'],
+  lifestyle_compatibility: ['lifestyle', 'city', 'language', 'pet'],
+};
+
+function getMatchScore(match) {
+  return Number(match.compat ?? match.compatibility_score ?? 0);
+}
+
+function getMatchTier(score) {
+  if (score >= 85) {
+    return { label: 'Exceptional Match', slug: 'exceptional', barClass: 'compat-bar-exceptional' };
+  }
+  if (score >= 70) {
+    return { label: 'Strong Match', slug: 'strong', barClass: 'compat-bar-strong' };
+  }
+  if (score >= 55) {
+    return { label: 'Good Match', slug: 'good', barClass: 'compat-bar-good' };
+  }
+  return { label: 'Moderate Match', slug: 'moderate', barClass: 'compat-bar-moderate' };
+}
+
+function findExplanationForFactor(key, explanations) {
+  const hints = COMPAT_FACTOR_HINTS[key] || [key.replace(/_/g, ' ')];
+  for (const explanation of explanations || []) {
+    const lower = explanation.toLowerCase();
+    if (hints.some((hint) => lower.includes(hint))) {
+      return explanation;
+    }
+  }
+  return null;
+}
+
+function getTopCompatibilityReasons(match, limit = 3) {
+  const breakdown = match.compatibility_breakdown || {};
+  const explanations = match.explanation || [];
+  const ranked = Object.entries(breakdown)
+    .filter(([, points]) => points > 0)
+    .sort((a, b) => b[1] - a[1]);
+
+  const reasons = [];
+  const used = new Set();
+
+  for (const [key] of ranked) {
+    const reason = findExplanationForFactor(key, explanations);
+    if (reason && !used.has(reason)) {
+      reasons.push(reason);
+      used.add(reason);
+    }
+    if (reasons.length >= limit) break;
+  }
+
+  for (const explanation of explanations) {
+    if (!used.has(explanation) && reasons.length < limit) {
+      reasons.push(explanation);
+      used.add(explanation);
+    }
+  }
+
+  return reasons;
+}
+
+function getMatchIntroduction(match) {
+  if (match.introduction) {
+    return match.introduction;
+  }
+  return buildMatchIntroductionFallback(match);
+}
+
+function buildMatchIntroductionFallback(match) {
+  const score = getMatchScore(match);
+  const profile = match.profile || {};
+  const education = profile.education || match.facts?.find((f) => f[0] === "Edu")?.[1] || "";
+  const designation =
+    profile.designation || match.facts?.find((f) => f[0] === "Occupation")?.[1] || "";
+  const company = profile.company || "";
+  const wantsKids = profile.wantsKids || "Maybe";
+  const openToRelocate = profile.openToRelocate || "Maybe";
+  const languages = profile.languages || [];
+  const firstName = (match.name || "This candidate").split(" ")[0];
+
+  const educationLine =
+    education && designation && company
+      ? `${firstName} holds a ${education} and works as a ${designation} at ${company}.`
+      : education && designation
+        ? `${firstName} holds a ${education} and works as a ${designation}.`
+        : education
+          ? `${firstName} brings a ${education} background to this introduction.`
+          : designation
+            ? `${firstName} works as a ${designation}, offering relevant professional experience.`
+            : "";
+
+  const familyLine =
+    wantsKids === "Yes"
+      ? "Their profile reflects a positive outlook on building a family."
+      : wantsKids === "No"
+        ? "Their profile indicates a lifestyle focus without immediate parenting plans."
+        : "They remain thoughtfully open on family planning preferences.";
+
+  const relocationLine =
+    openToRelocate === "Yes"
+      ? "They are open to relocating for the right partnership."
+      : openToRelocate === "No"
+        ? "They prefer to remain settled in their current location."
+        : "They show measured flexibility around relocation.";
+
+  const languageLine =
+    languages.length >= 2
+      ? `Shared fluency in ${languages.slice(0, 2).join(" and ")} should support comfortable conversation.`
+      : languages.length === 1
+        ? `A shared command of ${languages[0]} should help both sides connect with ease.`
+        : "";
+
+  const closingLine = `At ${score}% compatibility, this introduction is worth presenting to your client.`;
+
+  return [
+    `We're pleased to introduce ${match.name} as a thoughtfully curated match for your client.`,
+    educationLine,
+    familyLine,
+    relocationLine,
+    languageLine,
+    closingLine,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function buildMatchSummary(match) {
+  const score = getMatchScore(match);
+  const tier = getMatchTier(score);
+  const topReasons = getTopCompatibilityReasons(match, 3);
+  const reasonPhrase = topReasons.length
+    ? topReasons.slice(0, 2).join(' and ')
+    : 'shared profile alignment';
+
+  if (score >= 85) {
+    return `An ${tier.label.toLowerCase()} at ${score}% compatibility. ${reasonPhrase} make this a standout introduction worth prioritising.`;
+  }
+  if (score >= 70) {
+    return `A ${tier.label.toLowerCase()} at ${score}% compatibility with meaningful overlap on ${reasonPhrase}.`;
+  }
+  if (score >= 55) {
+    return `A ${tier.label.toLowerCase()} at ${score}% compatibility. Notable alignment includes ${reasonPhrase}.`;
+  }
+  return `A ${tier.label.toLowerCase()} at ${score}% compatibility. ${reasonPhrase} may still offer a worthwhile starting point for conversation.`;
+}
+
 function renderMatchSuggestions() {
   const grid = document.getElementById("matchesGrid");
   if (!grid) return;
@@ -769,6 +934,11 @@ function renderMatchSuggestions() {
   grid.innerHTML = matchSuggestions
     .map((m, i) => {
       const av = getAvatarStyle(i + 1);
+      const score = getMatchScore(m);
+      const tier = getMatchTier(score);
+      const summary = buildMatchSummary(m);
+      const topReasons = getTopCompatibilityReasons(m, 3);
+      const introduction = getMatchIntroduction(m);
       const facts = m.facts
         .map(
           (f) => `
@@ -779,7 +949,17 @@ function renderMatchSuggestions() {
     `,
         )
         .join("");
-      const reasons = (m.explanation || [])
+      const topReasonsHtml = topReasons
+        .map(
+          (reason) => `
+      <li class="match-top-reason">
+        <span class="match-top-reason-icon" aria-hidden="true">✓</span>
+        <span>${escapeHtml(reason)}</span>
+      </li>
+    `,
+        )
+        .join("");
+      const allReasons = (m.explanation || [])
         .map(
           (reason) => `
       <li>${escapeHtml(reason)}</li>
@@ -788,34 +968,59 @@ function renderMatchSuggestions() {
         .join("");
       const matchKey = buildMatchKey(currentMatchCustomerId, m.id);
       const hasSaved = getIntrosForMatch(matchKey).length > 0;
+      const alreadySent = sentMatchCandidateIds.has(m.id);
       return `
-      <div class="match-card ${m.high ? "high-compat" : ""}">
-        <span class="match-compat-badge ${m.compat >= 85 ? "compat-high" : "compat-med"}">${m.compat}% Match</span>
+      <div class="match-card match-card--${tier.slug}">
+        <div class="match-card-top">
+          <span class="match-tier-badge match-tier-badge--${tier.slug}">${escapeHtml(tier.label)}</span>
+          <div class="match-compat-display" aria-label="${score} percent compatibility">
+            <span class="match-compat-value">${score}</span>
+            <span class="match-compat-percent">%</span>
+          </div>
+        </div>
         <div class="match-avatar" style="background:${av.bg};color:${av.color}">${initials(m.name)}</div>
         <div class="match-name">${escapeHtml(m.name)}</div>
         <div class="match-sub">${escapeHtml(m.sub)}</div>
         <div class="match-facts">${facts}</div>
         <div class="compat-bar-wrapper">
           <div class="compat-bar-label">
-            <span>Compatibility</span>
-            <span>${m.compat}%</span>
+            <span>Compatibility Score</span>
+            <span class="compat-bar-score">${score}%</span>
           </div>
           <div class="compat-bar-track">
-            <div class="compat-bar-fill" style="width:${m.compat}%"></div>
+            <div class="compat-bar-fill ${tier.barClass}" style="width:${score}%"></div>
           </div>
         </div>
+        <p class="match-summary">${escapeHtml(summary)}</p>
+        <div class="match-intro-block">
+          <div class="match-intro-header">
+            <span class="match-intro-icon" aria-hidden="true">✦</span>
+            <p class="match-intro-label">AI Introduction</p>
+          </div>
+          <p class="match-intro-text">${escapeHtml(introduction)}</p>
+        </div>
+        ${
+          topReasons.length
+            ? `
+        <div class="match-top-reasons">
+          <p class="match-top-reasons-label">Top compatibility reasons</p>
+          <ul class="match-top-reasons-list">${topReasonsHtml}</ul>
+        </div>`
+            : ""
+        }
         <button class="why-match-toggle" type="button" onclick="toggleMatchReasons(this)">
-          Why this match?
+          ${(m.explanation || []).length > topReasons.length ? "View all factors" : "Why this match?"}
         </button>
         <div class="why-match-panel">
-          <ul>${reasons}</ul>
+          <p class="why-match-panel-label">Full compatibility breakdown</p>
+          <ul>${allReasons || "<li>No detailed factors recorded for this pairing.</li>"}</ul>
         </div>
-        <button class="gen-intro-btn ${hasSaved ? "has-saved" : ""}" type="button" data-customer-id="${escapeHtml(currentMatchCustomerId)}" data-match-id="${escapeHtml(m.id)}" data-match-name="${escapeHtml(m.name)}" data-compat="${m.compat}">
+        <button class="gen-intro-btn ${hasSaved ? "has-saved" : ""}" type="button" data-customer-id="${escapeHtml(currentMatchCustomerId)}" data-match-id="${escapeHtml(m.id)}" data-match-name="${escapeHtml(m.name)}" data-compat="${score}">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4H12C12.6 4 13 4.4 13 5V11C13 11.6 12.6 12 12 12H7L4 14V5C4 4.4 4.4 4 4 4Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M6 7H10M6 9.5H8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          ${hasSaved ? "✦ Introduction Saved" : "Generate Introduction"}
+          ${hasSaved ? "✦ Letter Saved" : "View Full Introduction"}
         </button>
-        <button class="send-match-btn" onclick="handleSendMatch(this)">
-          ✦ Send Match Introduction
+        <button class="send-match-btn ${alreadySent ? "sent-confirmed" : ""}" type="button" ${alreadySent ? "disabled" : ""}>
+          ${alreadySent ? "✓ Match Sent" : "✦ Send Match Introduction"}
         </button>
       </div>
     `;
@@ -831,12 +1036,22 @@ function loadMatchSuggestions(customerId) {
   }
 
   currentMatchCustomerId = customerId;
-  return fetch(`/api/customers/${encodeURIComponent(customerId)}/matches/`)
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`Match API request failed with ${response.status}`);
+  return Promise.all([
+    fetch(`/api/customers/${encodeURIComponent(customerId)}/matches/`),
+    fetch(`/api/customers/${encodeURIComponent(customerId)}/match-history/`),
+  ])
+    .then(async ([matchesRes, historyRes]) => {
+      if (!matchesRes.ok) {
+        throw new Error(`Match API request failed with ${matchesRes.status}`);
       }
-      return response.json();
+      const data = await matchesRes.json();
+      if (historyRes.ok) {
+        const history = await historyRes.json();
+        sentMatchCandidateIds = new Set(history.map((m) => m.candidateId));
+      } else {
+        sentMatchCandidateIds = new Set();
+      }
+      return data;
     })
     .then((data) => {
       matchSuggestions = data;
@@ -856,12 +1071,6 @@ function toggleMatchReasons(btn) {
   if (!panel) return;
   const isOpen = panel.classList.toggle("open");
   btn.classList.toggle("open", isOpen);
-}
-
-function handleSendMatch(btn) {
-  if (btn.classList.contains("sent")) return;
-  btn.textContent = "Introduction Sent ✓";
-  btn.classList.add("sent");
 }
 
 function renderNotesTimeline() {
@@ -979,135 +1188,205 @@ function renderMeetingsFull() {
     .join("");
 }
 
+const ANALYTICS_STATUS_COLORS = {
+  "New Lead": "#6366F1",
+  "Profile Review": "#8B5CF6",
+  "Active Search": "#7F1D1D",
+  "Matches Sent": "#D4AF37",
+  "Meeting Scheduled": "#B45309",
+  "Engagement In Progress": "#15803D",
+  "On Hold": "#9CA3AF",
+  Closed: "#6B7280",
+};
+
+const MATCH_METRIC_COLORS = {
+  Sent: "burgundy",
+  Accepted: "gold",
+  Rejected: "muted",
+  Pending: "warm",
+};
+
 function renderAnalytics() {
-  const barChart = document.getElementById("barChart");
-  const barLabels = document.getElementById("barLabels");
-  if (barChart && barLabels && barChart.children.length === 0) {
-    const monthData = [
-      { mon: "Oct", val: 18 },
-      { mon: "Nov", val: 24 },
-      { mon: "Dec", val: 31 },
-      { mon: "Jan", val: 22 },
-    ];
-
-    const max = Math.max(...monthData.map((d) => d.val));
-
-    barChart.innerHTML = monthData
-      .map(
-        (d, i) => `
-      <div class="bar-item">
-        <div class="bar-val">${d.val}</div>
-        <div class="bar-fill ${i === 2 ? "gold" : ""}" style="height:${Math.round((d.val / max) * 100)}%"></div>
-      </div>
-    `,
-      )
-      .join("");
-
-    barLabels.innerHTML = monthData
-      .map(
-        (d) => `
-      <div class="bar-label">${d.mon}</div>
-    `,
-      )
-      .join("");
-  }
-
-  const demoList = document.getElementById("demoList");
-  if (demoList && demoList.children.length === 0) {
-    const demos = [
-      { label: "25–30 yrs", pct: 38 },
-      { label: "31–35 yrs", pct: 44 },
-      { label: "36–40 yrs", pct: 14 },
-      { label: "41+ yrs", pct: 4 },
-    ];
-
-    demoList.innerHTML = demos
-      .map(
-        (d) => `
-      <div class="demo-item">
-        <span class="demo-label">${d.label}</span>
-        <div class="demo-track">
-          <div class="demo-fill" style="width:${d.pct}%"></div>
-        </div>
-        <span class="demo-pct">${d.pct}%</span>
-      </div>
-    `,
-      )
-      .join("");
-  }
-
-  renderFunnel();
+  loadAnalytics();
 }
 
-function renderFunnel() {
-  const funnelList = document.getElementById("funnelList");
-  if (!funnelList) return;
+async function loadAnalytics() {
+  try {
+    const response = await fetch("/api/analytics/");
+    if (!response.ok) {
+      throw new Error(`Analytics request failed with ${response.status}`);
+    }
+    const data = await response.json();
+    renderAnalyticsSummary(data.summary || {});
+    renderStatusDistributionChart(data.statusDistribution || []);
+    renderMatchSuccessChart(data.matchMetrics || {});
 
-  const customers = allCustomers.length ? allCustomers : clients;
-  const total = customers.length || 1;
-  const countWhere = (predicate) => customers.filter(predicate).length;
-  const activeOrLater = [
-    "Active Search",
-    "Matches Sent",
-    "Meeting Scheduled",
-    "Engagement In Progress",
-    "Closed",
-  ];
-  const matchOrLater = [
-    "Matches Sent",
-    "Meeting Scheduled",
-    "Engagement In Progress",
-    "Closed",
-  ];
-  const meetingOrLater = [
-    "Meeting Scheduled",
-    "Engagement In Progress",
-    "Closed",
-  ];
+    const subtitle = document.getElementById("analyticsSubtitle");
+    if (subtitle) {
+      subtitle.textContent = `Live metrics across ${data.summary?.totalCustomers || 0} customer profiles`;
+    }
+  } catch (err) {
+    console.error("Error loading analytics:", err);
+    const subtitle = document.getElementById("analyticsSubtitle");
+    if (subtitle) {
+      subtitle.textContent = "Unable to load analytics data right now.";
+    }
+  }
+}
 
-  const stages = [
-    { label: "Lead Created", count: customers.length },
-    { label: "Verified", count: countWhere((c) => c.statusTag !== "New Lead") },
-    {
-      label: "Active Search",
-      count: countWhere((c) => activeOrLater.includes(c.statusTag)),
-    },
-    {
-      label: "Match Sent",
-      count: countWhere((c) => matchOrLater.includes(c.statusTag)),
-    },
-    {
-      label: "Meeting Scheduled",
-      count: countWhere((c) => meetingOrLater.includes(c.statusTag)),
-    },
-    {
-      label: "Engagement",
-      count: countWhere(
-        (c) =>
-          c.statusTag === "Engagement In Progress" || c.statusTag === "Closed",
-      ),
-    },
-    { label: "Married", count: countWhere((c) => c.statusTag === "Closed") },
+function renderAnalyticsSummary(summary) {
+  const fields = [
+    ["analyticsTotalCustomers", summary.totalCustomers],
+    ["analyticsActiveSearch", summary.activeSearch],
+    ["analyticsMatchesSent", summary.matchesSent],
+    ["analyticsMeetingsScheduled", summary.meetingsScheduled],
+    ["analyticsNewLeads", summary.newLeads],
+    ["analyticsClosedProfiles", summary.closedProfiles],
   ];
 
-  funnelList.innerHTML = stages
-    .map((stage, index) => {
-      const pct = Math.max(4, Math.round((stage.count / total) * 100));
-      const arrow =
-        index < stages.length - 1 ? '<span class="funnel-arrow">→</span>' : "";
-      return `
-      <div class="funnel-item">
-        <div class="funnel-row">
-          <span class="funnel-label">${stage.label}</span>
-          ${arrow}
-          <span class="funnel-count">${stage.count}</span>
-        </div>
-        <div class="demo-track">
-          <div class="demo-fill" style="width:${pct}%"></div>
-        </div>
+  fields.forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value ?? 0;
+  });
+}
+
+function getAnalyticsStatusColor(label, index) {
+  return (
+    ANALYTICS_STATUS_COLORS[label] ||
+    ["#7F1D1D", "#D4AF37", "#B45309", "#6366F1"][index % 4]
+  );
+}
+
+function renderStatusDistributionChart(distribution) {
+  const donut = document.getElementById("statusDistributionDonut");
+  const legend = document.getElementById("statusDistributionLegend");
+  const bars = document.getElementById("statusDistributionBars");
+  const totalEl = document.getElementById("statusDistributionTotal");
+  const sub = document.getElementById("statusDistributionSub");
+
+  const total = distribution.reduce((sum, item) => sum + item.count, 0);
+  if (totalEl) totalEl.textContent = total;
+  if (sub) {
+    sub.textContent =
+      total > 0
+        ? `Breakdown of ${total} clients by current pipeline stage`
+        : "No customer records available yet";
+  }
+
+  if (!donut || !legend || !bars) return;
+
+  if (!total) {
+    donut.style.background = "rgba(127,29,29,0.08)";
+    legend.innerHTML = `<div class="analytics-empty">No customer status data to display.</div>`;
+    bars.innerHTML = "";
+    return;
+  }
+
+  let cursor = 0;
+  const segments = distribution.map((item, index) => {
+    const pct = (item.count / total) * 100;
+    const color = getAnalyticsStatusColor(item.label, index);
+    const start = cursor;
+    cursor += pct;
+    return { ...item, pct, color, start, end: cursor };
+  });
+
+  donut.style.background = `conic-gradient(${segments
+    .map((segment) => `${segment.color} ${segment.start}% ${segment.end}%`)
+    .join(", ")})`;
+
+  legend.innerHTML = segments
+    .map(
+      (segment) => `
+    <div class="analytics-legend-item">
+      <span class="analytics-legend-swatch" style="background:${segment.color}"></span>
+      <span class="analytics-legend-label">${escapeHtml(segment.label)}</span>
+      <span class="analytics-legend-value">${segment.count}</span>
+    </div>
+  `,
+    )
+    .join("");
+
+  bars.innerHTML = segments
+    .map(
+      (segment) => `
+    <div class="demo-item">
+      <span class="demo-label">${escapeHtml(segment.label)}</span>
+      <div class="demo-track">
+        <div class="demo-fill" style="width:${Math.max(segment.pct, 4)}%; background:${segment.color}"></div>
+      </div>
+      <span class="demo-pct">${Math.round(segment.pct)}%</span>
+    </div>
+  `,
+    )
+    .join("");
+}
+
+function renderMatchSuccessChart(metrics) {
+  const chart = document.getElementById("matchSuccessChart");
+  const labels = document.getElementById("matchSuccessLabels");
+  const summary = document.getElementById("matchMetricsSub");
+  const summaryRow = document.getElementById("matchMetricsSummary");
+
+  const items = [
+    { label: "Sent", value: metrics.sent || 0, tone: MATCH_METRIC_COLORS.Sent },
+    { label: "Accepted", value: metrics.accepted || 0, tone: MATCH_METRIC_COLORS.Accepted },
+    { label: "Rejected", value: metrics.rejected || 0, tone: MATCH_METRIC_COLORS.Rejected },
+    { label: "Pending", value: metrics.pending || 0, tone: MATCH_METRIC_COLORS.Pending },
+  ];
+
+  const max = Math.max(...items.map((item) => item.value), 1);
+  const total = metrics.total || 0;
+
+  if (summary) {
+    summary.textContent =
+      total > 0
+        ? `${total} total match records tracked in the database`
+        : "No match records available yet";
+  }
+
+  if (summaryRow) {
+    summaryRow.innerHTML = `
+      <div class="analytics-metric-pill">
+        <span class="analytics-metric-pill-label">Acceptance Rate</span>
+        <span class="analytics-metric-pill-value">${metrics.acceptanceRate || 0}%</span>
+      </div>
+      <div class="analytics-metric-pill">
+        <span class="analytics-metric-pill-label">Avg Compatibility</span>
+        <span class="analytics-metric-pill-value">${metrics.averageCompatibility || 0}%</span>
+      </div>
+      <div class="analytics-metric-pill">
+        <span class="analytics-metric-pill-label">High Compatibility</span>
+        <span class="analytics-metric-pill-value">${metrics.highCompatibility || 0}</span>
       </div>
     `;
-    })
+  }
+
+  if (!chart || !labels) return;
+
+  if (!total) {
+    chart.innerHTML = `<div class="analytics-empty">No match records to chart yet.</div>`;
+    labels.innerHTML = "";
+    return;
+  }
+
+  chart.innerHTML = items
+    .map(
+      (item) => `
+    <div class="bar-item">
+      <div class="bar-val">${item.value}</div>
+      <div class="bar-fill analytics-bar-${item.tone}" style="height:${Math.max(Math.round((item.value / max) * 100), item.value ? 8 : 0)}%"></div>
+    </div>
+  `,
+    )
+    .join("");
+
+  labels.innerHTML = items
+    .map(
+      (item) => `
+    <div class="bar-label">${escapeHtml(item.label)}</div>
+  `,
+    )
     .join("");
 }
 
@@ -1141,11 +1420,12 @@ function viewClient(index) {
     `;
   }
 
-  // Status badge
+  // Status badge — driven by customer status_tag
   const statusBadge = document.querySelector(".profile-status-badge");
   if (statusBadge) {
-    statusBadge.textContent = `${capitalize(c.status)} Client`;
-    statusBadge.className = `profile-status-badge ${c.status === "active" ? "active-badge" : c.status === "matched" ? "matched-badge" : "pending-badge"}`;
+    const badgeClass = getJourneyBadgeClass(c.statusTag, c.status);
+    statusBadge.textContent = c.statusTag || "New Lead";
+    statusBadge.className = `profile-status-badge ${badgeClass}`;
   }
 
   // Personal info grid
@@ -1223,42 +1503,7 @@ function viewClient(index) {
   }
 
   renderProfileCompletion(c, poolProfile);
-
-  // Status tag in timeline section
-  const statusTimeline = document.getElementById("matchmakingStatusTimeline");
-  if (statusTimeline) {
-    const statusStep = capitalize(
-      c.status === "active"
-        ? "Active Search"
-        : c.status === "matched"
-          ? "Matches Sent"
-          : "Profile Review",
-    );
-    statusTimeline.innerHTML = `
-      <div class="timeline-step done">
-        <div class="step-dot"></div>
-        <div class="step-body"><p class="step-title">Profile Onboarded</p><p class="step-date">${c.updated}</p></div>
-      </div>
-      <div class="timeline-step ${c.status === "active" || c.status === "matched" ? "done" : "active"}">
-        <div class="step-dot ${c.status === "pending" ? "pulse" : ""}"></div>
-        <div class="step-body"><p class="step-title">Initial Consultation</p><p class="step-date">${c.status !== "pending" ? "Completed" : "Pending"}</p></div>
-      </div>
-      <div class="timeline-step ${c.status === "matched" ? "done" : c.status === "active" ? "active" : "pending"}">
-        <div class="step-dot ${c.status === "active" ? "pulse" : ""}"></div>
-        <div class="step-body"><p class="step-title">${statusStep}</p><p class="step-date">${c.status === "matched" ? "Matches sent" : c.status === "active" ? "In Progress" : "Pending"}</p></div>
-      </div>
-      <div class="timeline-step ${c.status === "matched" ? "active" : "pending"}">
-        <div class="step-dot ${c.status === "matched" ? "pulse" : ""}"></div>
-        <div class="step-body"><p class="step-title">Meeting Scheduled</p><p class="step-date">${c.status === "matched" ? "Upcoming" : "Pending"}</p></div>
-      </div>
-      <div class="timeline-step pending">
-        <div class="step-dot"></div>
-        <div class="step-body"><p class="step-title">Post-Meeting Follow-up</p><p class="step-date">Pending</p></div>
-      </div>
-    `;
-  }
-
-  renderCustomerActivityTimeline(c);
+  renderCustomerJourney(c);
 
   // Update matches page sub-heading
   const matchesSub = document.querySelector("#page-matches .matches-header p");
@@ -1266,6 +1511,7 @@ function viewClient(index) {
     matchesSub.textContent = `AI-curated compatibility matches for ${c.name}`;
   currentMatchCustomerId = c.id;
   loadMatchSuggestions(c.id);
+  loadMatchHistory(c.id);
 
   showPage("profile");
 }
@@ -1364,37 +1610,96 @@ function hasValues(...values) {
   );
 }
 
-function renderCustomerActivityTimeline(customer) {
-  const activityTimeline = document.getElementById("customerActivityTimeline");
-  if (!activityTimeline) return;
+const CUSTOMER_JOURNEY_STAGES = [
+  "New Lead",
+  "Profile Review",
+  "Active Search",
+  "Matches Sent",
+  "Meeting Scheduled",
+  "Engagement In Progress",
+  "Closed",
+];
 
-  const isPending = customer.status === "pending";
-  const isActive = customer.status === "active";
-  const isMatched = customer.status === "matched";
-  const isInactive = customer.status === "inactive";
+function getJourneyStageIndex(statusTag) {
+  const index = CUSTOMER_JOURNEY_STAGES.indexOf(statusTag);
+  if (index >= 0) return index;
+  if (statusTag === "On Hold") {
+    return CUSTOMER_JOURNEY_STAGES.indexOf("Active Search");
+  }
+  return 0;
+}
 
-  activityTimeline.innerHTML = `
-    <div class="timeline-step done">
-      <div class="step-dot"></div>
-      <div class="step-body"><p class="step-title">Profile Created</p><p class="step-date">${customer.updated}</p></div>
+function getJourneyBadgeClass(statusTag, uiStatus) {
+  if (statusTag === "Closed" || statusTag === "On Hold") return "inactive-badge";
+  if (statusTag === "Engagement In Progress") return "matched-badge";
+  if (uiStatus === "active") return "active-badge";
+  return "pending-badge";
+}
+
+function getJourneyStepState(index, currentIndex, isOnHold) {
+  if (index < currentIndex) return "done";
+  if (index > currentIndex) return "upcoming";
+  return isOnHold ? "on-hold" : "current";
+}
+
+function refreshActiveProfileJourney(customerId) {
+  const profilePage = document.getElementById("page-profile");
+  if (!profilePage?.classList.contains("active")) return;
+  const customer = (allCustomers.length ? allCustomers : clients).find(
+    (c) => c.id === customerId,
+  );
+  if (customer) renderCustomerJourney(customer);
+}
+
+function renderCustomerJourney(customer) {
+  const container = document.getElementById("customerJourneyTracker");
+  const subtitle = document.getElementById("journeySubtitle");
+  const pill = document.getElementById("journeyCurrentStatus");
+  if (!container) return;
+
+  const statusTag = customer.statusTag || "New Lead";
+  const currentIndex = getJourneyStageIndex(statusTag);
+  const isOnHold = statusTag === "On Hold";
+  const totalStages = CUSTOMER_JOURNEY_STAGES.length;
+  const progressPct =
+    totalStages <= 1 ? 0 : (currentIndex / (totalStages - 1)) * 100;
+
+  container.innerHTML = `
+    <div class="journey-progress-rail" aria-hidden="true">
+      <div class="journey-progress-fill" style="width:${progressPct}%"></div>
     </div>
-    <div class="timeline-step ${isPending ? "active" : "done"}">
-      <div class="step-dot ${isPending ? "pulse" : ""}"></div>
-      <div class="step-body"><p class="step-title">Consultation Completed</p><p class="step-date">${isPending ? "In Progress" : "Completed"}</p></div>
-    </div>
-    <div class="timeline-step ${isMatched || isActive ? "done" : "pending"}">
-      <div class="step-dot"></div>
-      <div class="step-body"><p class="step-title">Match Sent</p><p class="step-date">${isMatched || isActive ? "Sent to client" : "Pending"}</p></div>
-    </div>
-    <div class="timeline-step ${isMatched ? "done" : isActive ? "active" : "pending"}">
-      <div class="step-dot ${isActive ? "pulse" : ""}"></div>
-      <div class="step-body"><p class="step-title">Meeting Scheduled</p><p class="step-date">${isMatched ? "Scheduled" : isActive ? "In Progress" : "Pending"}</p></div>
-    </div>
-    <div class="timeline-step ${isInactive ? "done" : isMatched ? "active" : "pending"}">
-      <div class="step-dot ${isMatched ? "pulse" : ""}"></div>
-      <div class="step-body"><p class="step-title">Feedback Received</p><p class="step-date">${isInactive ? "Received" : isMatched ? "Awaiting feedback" : "Pending"}</p></div>
+    <div class="journey-steps" role="list" aria-label="Customer journey progress">
+      ${CUSTOMER_JOURNEY_STAGES.map((stage, index) => {
+        const state = getJourneyStepState(index, currentIndex, isOnHold);
+        const isCurrent = state === "current" || state === "on-hold";
+        return `
+        <div class="journey-step journey-step--${state}" role="listitem" ${isCurrent ? 'aria-current="step"' : ""}>
+          <div class="journey-marker-wrap">
+            <div class="journey-marker ${isCurrent ? "pulse" : ""}"></div>
+          </div>
+          <span class="journey-label">${escapeHtml(stage)}</span>
+          ${isCurrent ? `<span class="journey-step-badge">${isOnHold ? "On Hold" : "Current"}</span>` : ""}
+        </div>
+      `;
+      }).join("")}
     </div>
   `;
+
+  if (pill) {
+    pill.textContent = statusTag;
+    pill.className = `journey-current-pill journey-pill--${getJourneyBadgeClass(statusTag, customer.status).replace("-badge", "")}`;
+  }
+
+  if (subtitle) {
+    if (isOnHold) {
+      subtitle.textContent =
+        "This profile is paused. Reactivate to continue from Active Search.";
+    } else if (statusTag === "Closed") {
+      subtitle.textContent = "Journey complete. Profile archived as Closed.";
+    } else {
+      subtitle.textContent = `Stage ${currentIndex + 1} of ${totalStages} · Last updated ${customer.updated || "recently"}`;
+    }
+  }
 }
 
 /* ─── KPI Counter Animation ─────────────────── */
@@ -1514,7 +1819,9 @@ function applyCustomerData(data) {
   renderMeetingCustomerOptions();
   updateDashboardMetrics();
   renderWorkspace();
-  renderFunnel();
+  if (document.getElementById("page-analytics")?.classList.contains("active")) {
+    loadAnalytics();
+  }
 }
 
 function loadCustomers(filters = {}) {
@@ -1899,7 +2206,10 @@ function openIntroModal(
   const savedBadge = document.getElementById("introSavedBadge");
   const copyBtn = document.getElementById("introCopyBtn");
 
-  sub.textContent = `For ${matchName} · ${compat}% compatibility`;
+  const match = matchSuggestions.find((m) => m.id === matchId);
+  const score = match ? getMatchScore(match) : Number(compat);
+  const tier = getMatchTier(score);
+  sub.textContent = `For ${matchName} · ${score}% compatibility · ${tier.label}`;
   msgBox.classList.remove("visible");
   msgBox.textContent = "";
   footer.style.display = "none";
@@ -1909,14 +2219,14 @@ function openIntroModal(
     copyBtn.classList.remove("copied");
   }
 
-  // Get match data from matchSuggestions
-  const match = matchSuggestions.find((m) => m.id === matchId);
   if (match) {
-    const reasons = match.explanation || [];
-    compatRow.innerHTML = reasons
-      .slice(0, 6)
-      .map((r) => `<span class="intro-compat-chip">${escapeHtml(r)}</span>`)
-      .join("");
+    const topReasons = getTopCompatibilityReasons(match, 4);
+    compatRow.innerHTML = `
+      <span class="intro-compat-chip intro-compat-tier intro-compat-tier--${tier.slug}">${escapeHtml(tier.label)}</span>
+      ${topReasons.map((reason) => `<span class="intro-compat-chip">${escapeHtml(reason)}</span>`).join("")}
+    `;
+  } else {
+    compatRow.innerHTML = `<span class="intro-compat-chip intro-compat-tier intro-compat-tier--${tier.slug}">${escapeHtml(tier.label)}</span>`;
   }
 
   backdrop.classList.add("open");
@@ -1957,99 +2267,58 @@ async function generateIntroMessage(
 
   // Get match data from matchSuggestions
   const match = matchSuggestions.find((m) => m.id === matchId);
+  const score = match ? getMatchScore(match) : Number(compat);
+  const introduction = match
+    ? getMatchIntroduction(match)
+    : buildMatchIntroductionFallback({
+        name: matchName,
+        compat: score,
+        profile: {},
+        facts: [],
+      });
   const reasons = match?.explanation || [];
-  const matchFacts = match?.facts || [];
 
-  const factsText = (matchFacts || [])
-    .map(([label, val]) => `${label}: ${val}`)
-    .join(", ");
-  const reasonsText = (reasons || []).join("; ");
+  await new Promise((resolve) => setTimeout(resolve, 450));
 
-  const prompt = `You are a professional matchmaker writing a warm, personalised introduction letter on behalf of a matchmaking agency called SoulSync AI.
+  const text = `Dear ${customerName},
 
-Write a short, elegant introduction message (3-4 paragraphs, ~150-200 words) that a matchmaker would send to a client about a potential match.
+${introduction}
 
-Client being introduced: ${customerName}
-Proposed match: ${matchName}
-Compatibility score: ${compat}%
-Match details: ${factsText}
-Compatibility reasons: ${reasonsText}
-
-Guidelines:
-- Start with a warm, professional greeting
-- Mention why this specific pairing makes sense, referencing 2-3 of the compatibility reasons
-- Keep the tone warm, hopeful, and professional — not salesy
-- End with a gentle invitation to consider the introduction
-- Do NOT include subject lines, sign-offs, or placeholders in brackets
-- Write in third person about the match candidate`;
-
-  // try {
-  //   const response = await fetch('https://api.anthropic.com/v1/messages', {
-  //     method: 'POST',
-  //     headers: { 'Content-Type': 'application/json' },
-  //     body: JSON.stringify({
-  //       model: 'claude-sonnet-4-20250514',
-  //       max_tokens: 1000,
-  //       messages: [{ role: 'user', content: prompt }]
-  //     })
-  //   });
-
-  //   const data = await response.json();
-  //   const text = (data.content || []).map(b => b.text || '').join('');
-
-  //   loading.style.display = 'none';
-  //   msgBox.textContent    = text;
-  //   msgBox.classList.add('visible');
-  //   footer.style.display  = 'flex';
-  //   _introModalMessage    = text;
-
-  //   const entry = {
-  //     message: text,
-  //     compat,
-  //     matchName,
-  //     date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-  //     time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-  //   };
-  //   saveIntroToStore(_introModalMatchKey, entry);
-
-  //   const savedBadge = document.getElementById('introSavedBadge');
-  //   if (savedBadge) {
-  //     savedBadge.style.display = 'flex';
-  //     setTimeout(() => { savedBadge.style.display = 'none'; }, 3000);
-  //   }
-  //   renderIntroHistory();
-
-  // } catch (err) {
-  //   loading.style.display = 'none';
-  //   msgBox.textContent    = 'Sorry, the introduction could not be generated at this time. Please try again.';
-  //   msgBox.classList.add('visible');
-  //   footer.style.display  = 'flex';
-  //   console.error('Intro generation error:', err);
-  // }
-  const text = `
-Hi ${customerName},
-
-We are pleased to introduce ${matchName} as a potential match.
-
-This recommendation was generated based on a compatibility score of ${compat}%.
-
-Key strengths include:
-${(reasons || [])
-  .slice(0, 3)
-  .map((r) => `• ${r}`)
-  .join("\n")}
-
-We encourage you to review this profile and consider an introductory conversation.
+${reasons.length ? `Key compatibility highlights:\n${reasons.slice(0, 3).map((reason) => `• ${reason}`).join("\n")}\n\n` : ""}We would be glad to arrange an introductory conversation at your convenience.
 
 Warm regards,
-SoulSync AI
-`;
+SoulSync AI`;
 
   loading.style.display = "none";
   msgBox.textContent = text;
   msgBox.classList.add("visible");
   footer.style.display = "flex";
   _introModalMessage = text;
+
+  const entry = {
+    message: text,
+    compat: score,
+    matchName,
+    date: new Date().toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }),
+    time: new Date().toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+  };
+  saveIntroToStore(_introModalMatchKey, entry);
+
+  const savedBadge = document.getElementById("introSavedBadge");
+  if (savedBadge) {
+    savedBadge.style.display = "flex";
+    setTimeout(() => {
+      savedBadge.style.display = "none";
+    }, 3000);
+  }
+  renderIntroHistory();
 }
 
 function renderIntroHistory() {
@@ -2181,3 +2450,332 @@ document.addEventListener("DOMContentLoaded", initIntroModalEvents);
 function generateIntroduction() {
   console.log("BUTTON CLICKED");
 }
+
+/* ═══════════════════════════════════════════════
+   SEND MATCH WORKFLOW
+   ═══════════════════════════════════════════════ */
+
+/* ─── Toast System ───────────────────────────── */
+(function initToastContainer() {
+  if (document.getElementById('toastContainer')) return;
+  const el = document.createElement('div');
+  el.id = 'toastContainer';
+  el.className = 'toast-container';
+  document.body.appendChild(el);
+})();
+
+function showToast({ type = 'info', title, message, duration = 4000 }) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  const iconMap = {
+    success: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6 11.5L13 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    error:   `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+    info:    `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 7V11M8 5.5V5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  };
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <div class="toast-icon">${iconMap[type] || iconMap.info}</div>
+    <div class="toast-body">
+      <div class="toast-title">${escapeHtml(title)}</div>
+      ${message ? `<div class="toast-message">${escapeHtml(message)}</div>` : ''}
+    </div>
+    <button class="toast-close" aria-label="Dismiss">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2L10 10M10 2L2 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+  `;
+
+  container.appendChild(toast);
+
+  const dismiss = () => {
+    toast.classList.add('toast-exit');
+    setTimeout(() => toast.remove(), 320);
+  };
+
+  toast.querySelector('.toast-close').addEventListener('click', dismiss);
+  setTimeout(dismiss, duration);
+}
+
+/* ─── Send Match Modal State ─────────────────── */
+let _smCustomerId  = '';
+let _smCandidateId = '';
+let _smMatchName   = '';
+let _smCompat      = 0;
+let _smMatchData   = null;
+
+function openSendMatchModal(customerId, candidateId, matchName, compat, matchData) {
+  _smCustomerId  = customerId;
+  _smCandidateId = candidateId;
+  _smMatchName   = matchName;
+  _smCompat      = compat;
+  _smMatchData   = matchData || null;
+
+  const backdrop = document.getElementById('sendMatchModalBackdrop');
+  if (!backdrop) return;
+
+  /* ── Populate candidate info ── */
+  const nameEl   = document.getElementById('smCandidateName');
+  const metaEl   = document.getElementById('smCandidateMeta');
+  const avatarEl = document.getElementById('smCandidateAvatar');
+  const compatEl = document.getElementById('smCompatScore');
+  const pillsEl  = document.getElementById('smInfoPills');
+  const subtitleEl = document.getElementById('smModalSub');
+
+  const clientName = (allCustomers.length ? allCustomers : clients)
+    .find(c => c.id === customerId)?.name || 'Your client';
+
+  if (subtitleEl) subtitleEl.textContent = `Sending to ${escapeHtml(clientName)} · ${compat}% compatibility`;
+
+  // Avatar
+  const av = getAvatarStyle(Math.floor(Math.random() * 6));
+  if (avatarEl) {
+    avatarEl.style.background = av.bg;
+    avatarEl.style.color = av.color;
+    avatarEl.textContent = initials(matchName);
+  }
+
+  if (nameEl) nameEl.textContent = matchName;
+
+  // Meta from matchData facts
+  const age      = matchData?.sub?.split(' ')[0] || '—';
+  const city     = matchData?.sub?.split('· ')[1] || '—';
+  const profession = (matchData?.facts || []).find(f => f[0] === 'Occupation')?.[1] || '—';
+
+  if (metaEl) {
+    metaEl.innerHTML = `
+      <span>
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="4.5" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M2 11C2 8.8 3.8 7 6 7C8.2 7 10 8.8 10 11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        ${escapeHtml(age)} yrs
+      </span>
+      <span>
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1C4.3 1 3 2.3 3 4C3 6.5 6 11 6 11C6 11 9 6.5 9 4C9 2.3 7.7 1 6 1Z" stroke="currentColor" stroke-width="1.2"/></svg>
+        ${escapeHtml(city)}
+      </span>
+      <span>
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><rect x="1" y="3" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M4 2V4M8 2V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        ${escapeHtml(profession)}
+      </span>
+    `;
+  }
+
+  if (compatEl) compatEl.textContent = `${compat}%`;
+
+  // Info pills
+  if (pillsEl && matchData?.facts) {
+    pillsEl.innerHTML = matchData.facts.map(([label, val]) => `
+      <div class="send-match-pill">
+        <span class="send-match-pill-label">${escapeHtml(label)}</span>
+        ${escapeHtml(val)}
+      </div>
+    `).join('');
+  }
+
+  // Reset confirm button
+  const confirmBtn = document.getElementById('smConfirmBtn');
+  if (confirmBtn) {
+    confirmBtn.disabled = false;
+    confirmBtn.classList.remove('loading');
+    confirmBtn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M9 2.5L13.5 7L9 11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.5 7H13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Confirm & Send Match
+    `;
+  }
+
+  backdrop.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSendMatchModal() {
+  const backdrop = document.getElementById('sendMatchModalBackdrop');
+  if (backdrop) backdrop.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+async function confirmSendMatch() {
+  const confirmBtn = document.getElementById('smConfirmBtn');
+  if (!confirmBtn || confirmBtn.disabled) return;
+
+  // Loading state
+  confirmBtn.disabled = true;
+  confirmBtn.classList.add('loading');
+  confirmBtn.innerHTML = `<div class="btn-spinner"></div> Sending…`;
+
+  try {
+    const currentUser = getUser() || {};
+    const response = await fetch(`/api/customers/${encodeURIComponent(_smCustomerId)}/send-match/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken'),
+      },
+      body: JSON.stringify({
+        candidateId: _smCandidateId,
+        compatibilityScore: _smCompat,
+        matchmakerName: currentUser.name || window._currentUserName || '',
+        matchmakerEmail: currentUser.email || '',
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || `Request failed (${response.status})`);
+    }
+
+    const data = await response.json();
+
+    closeSendMatchModal();
+
+    // ── Update the send button in the match card ──
+    const matchCards = document.querySelectorAll('.match-card');
+    matchCards.forEach(card => {
+      const genBtn = card.querySelector('.gen-intro-btn');
+      const sendBtn = card.querySelector('.send-match-btn');
+      if (genBtn && genBtn.dataset.matchId === _smCandidateId) {
+        if (sendBtn) {
+          sendBtn.textContent = '✓ Match Sent';
+          sendBtn.classList.add('sent-confirmed');
+          sendBtn.disabled = true;
+        }
+      }
+    });
+
+    // ── Show success toast ──
+    showToast({
+      type: 'success',
+      title: 'Match Sent!',
+      message: `${_smMatchName} has been sent as a match introduction. Status updated to "Matches Sent".`,
+      duration: 5000,
+    });
+
+    // ── Add notification ──
+    addNotification('match', `Match sent: ${_smMatchName} introduced to ${(allCustomers.length ? allCustomers : clients).find(c => c.id === _smCustomerId)?.name || 'client'}.`);
+
+    // ── Reload customers to reflect status change ──
+    await Promise.all([loadAllCustomers(), loadCustomers(getDirectoryFilters())]);
+
+    sentMatchCandidateIds.add(_smCandidateId);
+    renderMatchSuggestions();
+
+    // ── Refresh match history on customer detail page ──
+    const profilePage = document.getElementById('page-profile');
+    if (profilePage && profilePage.classList.contains('active')) {
+      loadMatchHistory(_smCustomerId);
+      refreshActiveProfileJourney(_smCustomerId);
+    }
+
+  } catch (err) {
+    confirmBtn.disabled = false;
+    confirmBtn.classList.remove('loading');
+    confirmBtn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M9 2.5L13.5 7L9 11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.5 7H13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Confirm & Send Match
+    `;
+    showToast({ type: 'error', title: 'Send Failed', message: err.message });
+  }
+}
+
+/* ─── Match History (on Profile page) ─────────── */
+async function loadMatchHistory(customerId) {
+  if (!customerId) return [];
+  try {
+    const response = await fetch(`/api/customers/${encodeURIComponent(customerId)}/match-history/`);
+    if (!response.ok) return [];
+    const history = await response.json();
+    sentMatchCandidateIds = new Set(history.map((m) => m.candidateId));
+    renderMatchHistory(history);
+    return history;
+  } catch (err) {
+    console.error('Error loading match history:', err);
+    return [];
+  }
+}
+
+function renderMatchHistory(history) {
+  const container = document.getElementById('matchHistoryList');
+  const countEl   = document.getElementById('matchHistoryCount');
+  if (!container) return;
+
+  if (countEl) countEl.textContent = history.length ? `(${history.length})` : '';
+
+  if (history.length === 0) {
+    container.innerHTML = `<div class="match-history-empty">No matches sent yet. Use the Match Suggestions page to send introductions.</div>`;
+    return;
+  }
+
+  container.innerHTML = history.map((m, i) => {
+    const av = getAvatarStyle(i);
+    const statusClass = {
+      Sent:     'mh-status-sent',
+      Accepted: 'mh-status-accepted',
+      Rejected: 'mh-status-rejected',
+      Pending:  'mh-status-pending',
+    }[m.status] || 'mh-status-sent';
+    const dateSent = m.sentAt || m.createdAt;
+
+    return `
+      <div class="match-history-item">
+        <div class="match-history-avatar" style="background:${av.bg};color:${av.color}">${initials(m.candidateName)}</div>
+        <div class="match-history-info">
+          <div class="match-history-name">${escapeHtml(m.candidateName)}</div>
+          <div class="match-history-meta">
+            Sent ${escapeHtml(dateSent)} · by ${escapeHtml(m.sentBy || '—')}
+            <span class="match-history-meta-sep">·</span>
+            ${escapeHtml(m.candidateAge)} yrs · ${escapeHtml(m.candidateCity)}
+          </div>
+        </div>
+        <div class="match-history-score">${m.compatibilityScore}%<span> match</span></div>
+        <div class="match-history-status"><span class="mh-status-badge ${statusClass}">${escapeHtml(m.status)}</span></div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ─── Wire up modal events ───────────────────── */
+function initSendMatchModal() {
+  // Delegated click for send-match-btn on match cards
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.send-match-btn');
+    if (!btn || btn.classList.contains('sent-confirmed') || btn.disabled) return;
+
+    // Find the match data from the card
+    const card = btn.closest('.match-card');
+    if (!card) return;
+    const genBtn = card.querySelector('.gen-intro-btn');
+    if (!genBtn) return;
+
+    const candidateId = genBtn.dataset.matchId;
+    const matchName   = genBtn.dataset.matchName;
+    const compat      = Number(genBtn.dataset.compat);
+    const customerId  = genBtn.dataset.customerId || currentMatchCustomerId;
+
+    // Find full match data
+    const matchData = matchSuggestions.find(m => m.id === candidateId) || null;
+
+    openSendMatchModal(customerId, candidateId, matchName, compat, matchData);
+  });
+
+  // Close button
+  const closeBtn = document.getElementById('smModalClose');
+  closeBtn && closeBtn.addEventListener('click', closeSendMatchModal);
+
+  // Backdrop click-outside
+  const backdrop = document.getElementById('sendMatchModalBackdrop');
+  const modal    = document.getElementById('sendMatchModal');
+  backdrop && backdrop.addEventListener('click', e => {
+    if (modal && !modal.contains(e.target)) closeSendMatchModal();
+  });
+
+  // Escape key
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && backdrop?.classList.contains('open')) closeSendMatchModal();
+  });
+
+  // Confirm button
+  const confirmBtn = document.getElementById('smConfirmBtn');
+  confirmBtn && confirmBtn.addEventListener('click', confirmSendMatch);
+}
+
+document.addEventListener('DOMContentLoaded', initSendMatchModal);
+

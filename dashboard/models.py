@@ -80,7 +80,15 @@ class Match(models.Model):
     compatibility_score = models.IntegerField(default=50)
     high_compatibility = models.BooleanField(default=False)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
-    
+    sent_by = models.ForeignKey(
+        Matchmaker,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='matches_sent',
+    )
+    sent_at = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

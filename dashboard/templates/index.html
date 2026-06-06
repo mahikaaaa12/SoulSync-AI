@@ -505,6 +505,16 @@
 
         <div class="profile-main">
 
+          <div class="profile-section-card journey-section-card">
+            <div class="section-card-header">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 9H15M3 9L6 6M3 9L6 12M15 9L12 6M15 9L12 12" stroke="#D4AF37" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="3" cy="9" r="2" stroke="#D4AF37" stroke-width="1.5"/><circle cx="15" cy="9" r="2" stroke="#D4AF37" stroke-width="1.5"/></svg>
+              <h3>Customer Journey</h3>
+              <span class="journey-current-pill" id="journeyCurrentStatus">New Lead</span>
+            </div>
+            <p class="journey-subtitle" id="journeySubtitle">Track progress through the matchmaking pipeline</p>
+            <div class="journey-track" id="customerJourneyTracker"></div>
+          </div>
+
           <div class="profile-section-card">
             <div class="section-card-header">
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="7" r="3.5" stroke="#D4AF37" stroke-width="1.5"/><path d="M2.5 16C2.5 13 5.4 11 9 11C12.6 11 15.5 13 15.5 16" stroke="#D4AF37" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -550,91 +560,16 @@
             </div>
           </div>
 
-          <div class="profile-section-card">
+          <div class="profile-section-card match-history-section">
             <div class="section-card-header">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="#D4AF37" stroke-width="1.5"/><path d="M9 5V9L12 11" stroke="#D4AF37" stroke-width="1.5" stroke-linecap="round"/></svg>
-              <h3>Matchmaking Status</h3>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M9 16C9 16 3 12 3 7.5C3 5 5.5 3 8 4C8.7 4.3 9 4.5 9 4.5C9 4.5 9.3 4.3 10 4C12.5 3 15 5 15 7.5C15 12 9 16 9 16Z" stroke="#D4AF37" stroke-width="1.5"/>
+                <path d="M6.5 9L8.3 10.8L11.8 7.2" stroke="#D4AF37" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <h3>Match History <span id="matchHistoryCount" style="font-size:12px;font-weight:400;color:var(--warm-gray);font-family:var(--font-body);margin-left:4px;"></span></h3>
             </div>
-            <div class="status-timeline" id="matchmakingStatusTimeline">
-              <div class="timeline-step done">
-                <div class="step-dot"></div>
-                <div class="step-body">
-                  <p class="step-title">Profile Onboarded</p>
-                  <p class="step-date">Nov 12, 2024</p>
-                </div>
-              </div>
-              <div class="timeline-step done">
-                <div class="step-dot"></div>
-                <div class="step-body">
-                  <p class="step-title">Initial Consultation</p>
-                  <p class="step-date">Nov 18, 2024</p>
-                </div>
-              </div>
-              <div class="timeline-step done">
-                <div class="step-dot"></div>
-                <div class="step-body">
-                  <p class="step-title">3 Match Suggestions Sent</p>
-                  <p class="step-date">Dec 5, 2024</p>
-                </div>
-              </div>
-              <div class="timeline-step active">
-                <div class="step-dot pulse"></div>
-                <div class="step-body">
-                  <p class="step-title">Meeting Scheduled with Arjun M.</p>
-                  <p class="step-date">Upcoming — Jan 14, 2025</p>
-                </div>
-              </div>
-              <div class="timeline-step pending">
-                <div class="step-dot"></div>
-                <div class="step-body">
-                  <p class="step-title">Post-Meeting Follow-up</p>
-                  <p class="step-date">Pending</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="profile-section-card">
-            <div class="section-card-header">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="#D4AF37" stroke-width="1.5"/><path d="M9 4V9L12 11" stroke="#D4AF37" stroke-width="1.5" stroke-linecap="round"/><path d="M5 13H13" stroke="#D4AF37" stroke-width="1.5" stroke-linecap="round"/></svg>
-              <h3>Customer Activity Timeline</h3>
-            </div>
-            <div class="status-timeline" id="customerActivityTimeline">
-              <div class="timeline-step done">
-                <div class="step-dot"></div>
-                <div class="step-body">
-                  <p class="step-title">Profile Created</p>
-                  <p class="step-date">Nov 12, 2024</p>
-                </div>
-              </div>
-              <div class="timeline-step done">
-                <div class="step-dot"></div>
-                <div class="step-body">
-                  <p class="step-title">Consultation Completed</p>
-                  <p class="step-date">Nov 18, 2024</p>
-                </div>
-              </div>
-              <div class="timeline-step done">
-                <div class="step-dot"></div>
-                <div class="step-body">
-                  <p class="step-title">Match Sent</p>
-                  <p class="step-date">Dec 5, 2024</p>
-                </div>
-              </div>
-              <div class="timeline-step active">
-                <div class="step-dot pulse"></div>
-                <div class="step-body">
-                  <p class="step-title">Meeting Scheduled</p>
-                  <p class="step-date">Upcoming — Jan 14, 2025</p>
-                </div>
-              </div>
-              <div class="timeline-step pending">
-                <div class="step-dot"></div>
-                <div class="step-body">
-                  <p class="step-title">Feedback Received</p>
-                  <p class="step-date">Pending</p>
-                </div>
-              </div>
+            <div id="matchHistoryList" class="match-history-list">
+              <div class="match-history-empty">No matches sent yet. Use the Match Suggestions page to send introductions.</div>
             </div>
           </div>
 
@@ -939,24 +874,121 @@
       <div class="section-topbar">
         <div>
           <h2 class="section-heading">Analytics Overview</h2>
-          <p class="section-sub">Performance metrics for this quarter</p>
+          <p class="section-sub" id="analyticsSubtitle">Live metrics from your matchmaking database</p>
         </div>
       </div>
+
+      <section class="kpi-grid analytics-kpi-grid" id="analyticsKpiGrid">
+        <div class="kpi-card" data-animate>
+          <div class="kpi-icon-wrap burgundy">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="9" cy="8" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M2 20C2 16.7 5.1 14 9 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="16" cy="15" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M12 20C12 18.3 13.8 17 16 17C18.2 17 20 18.3 20 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="kpi-body">
+            <p class="kpi-label">Total Customers</p>
+            <div class="kpi-value-row">
+              <span class="kpi-value" id="analyticsTotalCustomers">—</span>
+              <span class="kpi-trend up">All profiles</span>
+            </div>
+          </div>
+          <div class="kpi-gold-bar"></div>
+        </div>
+
+        <div class="kpi-card" data-animate>
+          <div class="kpi-icon-wrap wine">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M8 11H14M11 8V14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="kpi-body">
+            <p class="kpi-label">Active Search</p>
+            <div class="kpi-value-row">
+              <span class="kpi-value" id="analyticsActiveSearch">—</span>
+              <span class="kpi-trend up">In pipeline</span>
+            </div>
+          </div>
+          <div class="kpi-gold-bar"></div>
+        </div>
+
+        <div class="kpi-card" data-animate>
+          <div class="kpi-icon-wrap gold">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 19L3 11C3 7.7 5.7 5 9 5C10.1 5 11 5.5 11 5.5C11 5.5 11.9 5 13 5C16.3 5 19 7.7 19 11L11 19Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="kpi-body">
+            <p class="kpi-label">Matches Sent</p>
+            <div class="kpi-value-row">
+              <span class="kpi-value" id="analyticsMatchesSent">—</span>
+              <span class="kpi-trend up">Introductions</span>
+            </div>
+          </div>
+          <div class="kpi-gold-bar"></div>
+        </div>
+
+        <div class="kpi-card" data-animate>
+          <div class="kpi-icon-wrap warm">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="5" width="16" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 3V6M15 3V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3 10H19" stroke="currentColor" stroke-width="1.5"/></svg>
+          </div>
+          <div class="kpi-body">
+            <p class="kpi-label">Meetings Scheduled</p>
+            <div class="kpi-value-row">
+              <span class="kpi-value" id="analyticsMeetingsScheduled">—</span>
+              <span class="kpi-trend up">Upcoming</span>
+            </div>
+          </div>
+          <div class="kpi-gold-bar"></div>
+        </div>
+
+        <div class="kpi-card" data-animate>
+          <div class="kpi-icon-wrap burgundy">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3L4 7V11C4 15.5 7.2 19.6 11 21C14.8 19.6 18 15.5 18 11V7L11 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 11L10 13L14 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="kpi-body">
+            <p class="kpi-label">New Leads</p>
+            <div class="kpi-value-row">
+              <span class="kpi-value" id="analyticsNewLeads">—</span>
+              <span class="kpi-trend up">Fresh intake</span>
+            </div>
+          </div>
+          <div class="kpi-gold-bar"></div>
+        </div>
+
+        <div class="kpi-card" data-animate>
+          <div class="kpi-icon-wrap wine">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="4" y="4" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 11H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="kpi-body">
+            <p class="kpi-label">Closed Profiles</p>
+            <div class="kpi-value-row">
+              <span class="kpi-value" id="analyticsClosedProfiles">—</span>
+              <span class="kpi-trend down">Archived</span>
+            </div>
+          </div>
+          <div class="kpi-gold-bar"></div>
+        </div>
+      </section>
+
       <div class="analytics-grid">
         <div class="panel analytics-card">
-          <h3 class="analytics-card-title">Matches by Month</h3>
-          <div class="bar-chart-wrapper">
-            <div class="bar-chart" id="barChart"></div>
-            <div class="bar-labels" id="barLabels"></div>
+          <h3 class="analytics-card-title">Customer Status Distribution</h3>
+          <p class="analytics-card-sub" id="statusDistributionSub">Breakdown of clients by current pipeline stage</p>
+          <div class="analytics-chart-body">
+            <div class="analytics-donut-wrap">
+              <div class="analytics-donut" id="statusDistributionDonut" aria-hidden="true"></div>
+              <div class="analytics-donut-center">
+                <span class="analytics-donut-value" id="statusDistributionTotal">0</span>
+                <span class="analytics-donut-label">Clients</span>
+              </div>
+            </div>
+            <div class="analytics-legend" id="statusDistributionLegend"></div>
           </div>
+          <div class="demo-list analytics-status-bars" id="statusDistributionBars"></div>
         </div>
+
         <div class="panel analytics-card">
-          <h3 class="analytics-card-title">Client Demographics</h3>
-          <div class="demo-list" id="demoList"></div>
-        </div>
-        <div class="panel analytics-card analytics-funnel-card">
-          <h3 class="analytics-card-title">Matchmaking Funnel</h3>
-          <div class="funnel-list" id="funnelList"></div>
+          <h3 class="analytics-card-title">Match Success Metrics</h3>
+          <p class="analytics-card-sub" id="matchMetricsSub">Outcomes across sent introductions</p>
+          <div class="analytics-metrics-row" id="matchMetricsSummary"></div>
+          <div class="bar-chart-wrapper analytics-match-chart">
+            <div class="bar-chart" id="matchSuccessChart"></div>
+            <div class="bar-labels" id="matchSuccessLabels"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1082,6 +1114,68 @@
       <div class="intro-history-section" id="introHistorySection" style="display:none;">
         <p class="intro-history-title">Previous introductions for this match</p>
         <div id="introHistoryList"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="send-match-modal-backdrop" id="sendMatchModalBackdrop"
+      role="dialog" aria-modal="true" aria-labelledby="smModalTitle">
+    <div class="send-match-modal" id="sendMatchModal">
+
+      <!-- Header -->
+      <div class="send-match-modal-header">
+        <div>
+          <h2 class="send-match-modal-title" id="smModalTitle">Send Match Introduction</h2>
+          <p class="send-match-modal-sub" id="smModalSub">Review and confirm this introduction</p>
+        </div>
+        <button class="send-match-modal-close" id="smModalClose" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M2 2L12 12M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Candidate Preview Card -->
+      <div class="send-match-candidate-card">
+        <div class="send-match-candidate-avatar" id="smCandidateAvatar">—</div>
+        <div class="send-match-candidate-info">
+          <div class="send-match-candidate-name" id="smCandidateName"></div>
+          <div class="send-match-candidate-meta" id="smCandidateMeta"></div>
+        </div>
+        <div class="send-match-compat-badge">
+          <div class="send-match-compat-circle" id="smCompatScore">—</div>
+          <span class="send-match-compat-label">Match</span>
+        </div>
+      </div>
+
+      <!-- Info Pills -->
+      <div class="send-match-info-pills" id="smInfoPills">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Disclaimer -->
+      <div class="send-match-disclaimer">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M7 5.5V8M7 9.5V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        This will record the introduction in the system and update the client's status to
+        <strong>&nbsp;Matches Sent</strong>. No real email or notification is sent.
+      </div>
+
+      <!-- Footer Actions -->
+      <div class="send-match-modal-footer">
+        <button class="btn-outline" onclick="closeSendMatchModal()">Cancel</button>
+        <button class="send-match-confirm-btn" id="smConfirmBtn">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <path d="M9 2.5L13.5 7L9 11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2.5 7H13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Confirm &amp; Send Match
+        </button>
       </div>
 
     </div>

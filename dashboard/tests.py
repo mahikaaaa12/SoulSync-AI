@@ -2,7 +2,7 @@ from django.test import TestCase
 from types import SimpleNamespace
 
 from .matchmaking import calculate_compatibility
-
+from .introductions import generate_match_introduction
 
 class CompatibilityEngineTests(TestCase):
     def test_high_compatibility_profile_pair(self):
@@ -217,6 +217,10 @@ class CompatibilityEngineTests(TestCase):
 
     def _customer(self, **overrides):
         defaults = {
+            'pk': 1,
+            'customer_id': 'C001',
+            'first_name': 'Priya',
+            'last_name': 'Sharma',
             'gender': '',
             'age': 30,
             'height': '',
@@ -234,4 +238,79 @@ class CompatibilityEngineTests(TestCase):
             'open_to_relocate': 'Maybe',
         }
         defaults.update(overrides)
-        return SimpleNamespace(**defaults)
+        customer = SimpleNamespace(**defaults)
+        customer.name = f"{customer.first_name} {customer.last_name}"
+        return customer
+
+
+class MatchIntroductionTests(TestCase):
+    def test_introduction_uses_required_profile_fields(self):
+        customer = self._customer(
+            customer_id='C001',
+            wants_kids='Yes',
+            open_to_relocate='Yes',
+            languages='Hindi, English',
+        )
+        candidate = self._customer(
+            customer_id='C002',
+            first_name='Ananya',
+            last_name='Mehta',
+            education='MBA',
+            designation='Product Manager',
+            company='Google India',
+            wants_kids='Yes',
+            open_to_relocate='Yes',
+            languages='Hindi, English, Tamil',
+            city='Bengaluru',
+        )
+
+        introduction = generate_match_introduction(customer, candidate, score=88)
+
+        self.assertIn('Ananya Mehta', introduction)
+        self.assertIn('MBA', introduction)
+        self.assertIn('Product Manager', introduction)
+        self.assertIn('Google India', introduction)
+        self.assertIn('family', introduction.lower())
+        self.assertIn('relocat', introduction.lower())
+        self.assertIn('Hindi', introduction)
+        self.assertIn('88%', introduction)
+
+    def test_introduction_is_deterministic(self):
+        customer = self._customer(customer_id='C010', languages='English')
+        candidate = self._customer(
+            customer_id='C020',
+            first_name='Rahul',
+            last_name='Kapoor',
+            education='B.Tech',
+            designation='Software Engineer',
+            company='Infosys',
+            languages='English, Hindi',
+            wants_kids='Maybe',
+            open_to_relocate='Maybe',
+        )
+
+        first = generate_match_introduction(customer, candidate, score=72)
+        second = generate_match_introduction(customer, candidate, score=72)
+
+        self.assertEqual(first, second)
+
+    def _customer(self, **overrides):
+        defaults = {
+            'pk': 1,
+            'customer_id': 'C001',
+            'first_name': 'Priya',
+            'last_name': 'Sharma',
+            'gender': '',
+            'age': 30,
+            'city': 'Mumbai',
+            'designation': '',
+            'company': '',
+            'education': '',
+            'languages': '',
+            'wants_kids': 'Maybe',
+            'open_to_relocate': 'Maybe',
+        }
+        defaults.update(overrides)
+        customer = SimpleNamespace(**defaults)
+        customer.name = f"{customer.first_name} {customer.last_name}"
+        return customer
