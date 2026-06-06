@@ -7,6 +7,7 @@
   <title>SoulSync AI — Matchmaking CRM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer"/>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'style.css' %}">
 </head>
@@ -39,6 +40,10 @@
         <svg class="nav-icon" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
         <span>Dashboard</span>
         <div class="nav-indicator"></div>
+      </a>
+      <a href="#" class="nav-item" data-page="workspace">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 8H13M7 12H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M5.5 5.5L7 7L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Workspace</span>
       </a>
       <a href="#" class="nav-item" data-page="clients">
         <svg class="nav-icon" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M3 17C3 14 6 12 10 12C14 12 17 14 17 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -119,10 +124,40 @@
           </div>
 
           <div class="dropdown-menu" id="dropdownMenu">
-            <a href="#">Profile</a>
-            <a href="#">Settings</a>
-            <a href="{% url 'login' %}">Logout</a>
-          </div>
+
+            <div class="dropdown-header">
+                <div class="dropdown-avatar">
+                    {{ user.first_name|first }}{{ user.last_name|first }}
+                </div>
+
+                <div class="dropdown-info">
+                    <div class="dropdown-name">
+                        {{ user.first_name }} {{ user.last_name }}
+                    </div>
+                    <div class="dropdown-role">
+                        Matchmaker
+                    </div>
+                </div>
+            </div>
+
+            <a href="#" class="dropdown-item">
+                <i class="fa-solid fa-circle-user"></i>
+                <span>Profile</span>
+            </a>
+
+            <a href="#" class="dropdown-item">
+                <i class="fa-solid fa-gear"></i>
+                <span>Settings</span>
+            </a>
+
+            <div class="dropdown-divider"></div>
+
+            <a href="{% url 'login' %}" class="dropdown-item logout-item">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Logout</span>
+            </a>
+
+        </div>
        </div>
       </div>
     </header>
@@ -224,7 +259,7 @@
                   <option value="desc">Oldest First</option>
                 </select>
               </div>
-              <button class="btn-primary small" onclick="showPage('profile')">+ Add Client</button>
+              <button class="btn-primary small" onclick="showPage('add-client')">+ Add Client</button>
             </div>
           </div>
 
@@ -294,6 +329,115 @@
 
     </div><!-- /page-dashboard -->
 
+    <!-- Matchmaker Workspace Page -->
+    <div class="page" id="page-workspace">
+      <section class="workspace-hero" data-animate>
+        <div class="workspace-hero-copy">
+          <span class="workspace-eyebrow">Live Matchmaker Desk</span>
+          <h2>Focus the day around clients who need momentum.</h2>
+          <p>New leads, follow-ups, and introductions are grouped into one working view.</p>
+        </div>
+        <div class="workspace-actions">
+          <button class="btn-primary" onclick="showPage('add-client')">+ Add Client</button>
+          <button class="btn-outline light" onclick="showPage('schedule-meeting')">+ Schedule Meeting</button>
+          <button class="btn-outline light" onclick="showPage('matches')">Review Matches</button>
+        </div>
+      </section>
+
+      <section class="kpi-grid">
+        <div class="kpi-card" data-animate>
+          <div class="kpi-icon-wrap burgundy">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="9" cy="8" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M2 20C2 16.7 5.1 14 9 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M15 7H20M15 11H19M15 15H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="kpi-body">
+            <p class="kpi-label">Assigned Clients</p>
+            <div class="kpi-value-row">
+              <span class="kpi-value" id="workspaceAssignedClients">0</span>
+              <span class="kpi-trend up">Active roster</span>
+            </div>
+          </div>
+          <div class="kpi-gold-bar"></div>
+        </div>
+
+        <div class="kpi-card" data-animate>
+          <div class="kpi-icon-wrap warm">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M11 6V11L14.5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 18L5 20M15 18L17 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="kpi-body">
+            <p class="kpi-label">Follow-ups Due</p>
+            <div class="kpi-value-row">
+              <span class="kpi-value" id="workspaceFollowupsDue">0</span>
+              <span class="kpi-trend down">Needs action</span>
+            </div>
+          </div>
+          <div class="kpi-gold-bar"></div>
+        </div>
+
+        <div class="kpi-card" data-animate>
+          <div class="kpi-icon-wrap gold">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="5" width="16" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 3V6M15 3V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3 10H19" stroke="currentColor" stroke-width="1.5"/><path d="M8 14H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="kpi-body">
+            <p class="kpi-label">Meetings Today</p>
+            <div class="kpi-value-row">
+              <span class="kpi-value" id="workspaceMeetingsToday">0</span>
+              <span class="kpi-trend up">Scheduled</span>
+            </div>
+          </div>
+          <div class="kpi-gold-bar"></div>
+        </div>
+
+        <div class="kpi-card" data-animate>
+          <div class="kpi-icon-wrap wine">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 19L3 11C3 7.7 5.7 5 9 5C10.1 5 11 5.5 11 5.5C11 5.5 11.9 5 13 5C16.3 5 19 7.7 19 11L11 19Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M11 8V14M8 11H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="kpi-body">
+            <p class="kpi-label">New Leads</p>
+            <div class="kpi-value-row">
+              <span class="kpi-value" id="workspaceNewLeads">0</span>
+              <span class="kpi-trend up">Fresh intake</span>
+            </div>
+          </div>
+          <div class="kpi-gold-bar"></div>
+        </div>
+      </section>
+
+      <section class="workspace-grid" data-animate>
+        <div class="panel workspace-focus-panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Priority Queue</h2>
+              <p class="panel-sub">Clients needing the next touchpoint</p>
+            </div>
+            <button class="row-action-btn" onclick="showPage('clients')">View roster</button>
+          </div>
+          <div class="workspace-priority-list" id="workspacePriorityList"></div>
+        </div>
+
+        <div class="panel workspace-agenda-panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Meeting Agenda</h2>
+              <p class="panel-sub">Upcoming introductions</p>
+            </div>
+            <button class="row-action-btn" onclick="showPage('meetings')">Open calendar</button>
+          </div>
+          <div class="workspace-agenda-list" id="workspaceAgendaList"></div>
+        </div>
+
+        <div class="panel workspace-activity-panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Pipeline Pulse</h2>
+              <p class="panel-sub">Roster distribution</p>
+            </div>
+          </div>
+          <div class="workspace-pulse" id="workspacePulse"></div>
+          <div class="workspace-activity-stream" id="workspaceActivityStream"></div>
+        </div>
+      </section>
+    </div><!-- /page-workspace -->
+
     <!-- Profile Page -->
     <div class="page" id="page-profile">
       <div class="profile-layout">
@@ -308,6 +452,25 @@
             Mumbai, Maharashtra
           </p>
           <div class="profile-status-badge active-badge">Active Client</div>
+
+          <div class="profile-divider"></div>
+
+          <div class="profile-completion-meter">
+            <div class="profile-completion-head">
+              <span>Profile Completion</span>
+              <strong id="profileCompletionValue">82% Complete</strong>
+            </div>
+            <div class="profile-completion-track">
+              <div class="profile-completion-fill" id="profileCompletionFill" style="width:82%"></div>
+            </div>
+            <div class="profile-completion-sections" id="profileCompletionSections">
+              <span>Basic Information</span>
+              <span>Family Information</span>
+              <span>Career</span>
+              <span>Preferences</span>
+              <span>Photos</span>
+            </div>
+          </div>
 
           <div class="profile-divider"></div>
 
@@ -532,7 +695,7 @@
           <h2 class="section-heading">All Clients</h2>
           <p class="section-sub">Complete client roster</p>
         </div>
-        <button class="btn-primary">+ Add New Client</button>
+        <button class="btn-primary" onclick="showPage('add-client')">+ Add New Client</button>
       </div>
       <div class="panel" style="margin-top:1.5rem;">
         <div class="client-table-wrapper">
@@ -555,6 +718,149 @@
       </div>
     </div>
 
+    <!-- Add Client Page -->
+    <div class="page" id="page-add-client">
+      <div class="section-topbar">
+        <div>
+          <h2 class="section-heading">Create Client</h2>
+          <p class="section-sub">Add a new client profile to the matchmaker roster</p>
+        </div>
+        <button class="btn-outline" onclick="showPage('clients')">Back to Clients</button>
+      </div>
+
+      <form class="form-panel" id="addClientForm">
+        {% csrf_token %}
+        <div class="form-section">
+          <h3 class="form-section-title">Basic Details</h3>
+          <div class="form-grid">
+            <label class="form-field">
+              <span>First Name</span>
+              <input type="text" name="firstName" required>
+            </label>
+            <label class="form-field">
+              <span>Last Name</span>
+              <input type="text" name="lastName" required>
+            </label>
+            <label class="form-field">
+              <span>Email</span>
+              <input type="email" name="email" required>
+            </label>
+            <label class="form-field">
+              <span>Gender</span>
+              <select name="gender" required>
+                <option value="">Select gender</option>
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+              </select>
+            </label>
+            <label class="form-field">
+              <span>Age</span>
+              <input type="number" name="age" min="18" max="80" required>
+            </label>
+            <label class="form-field">
+              <span>City</span>
+              <input type="text" name="city" required>
+            </label>
+            <label class="form-field">
+              <span>State</span>
+              <input type="text" name="state">
+            </label>
+            <label class="form-field">
+              <span>Status</span>
+              <select name="statusTag">
+                <option value="New Lead">New Lead</option>
+                <option value="Profile Review">Profile Review</option>
+                <option value="Active Search">Active Search</option>
+                <option value="Matches Sent">Matches Sent</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3 class="form-section-title">Profile Information</h3>
+          <div class="form-grid">
+            <label class="form-field">
+              <span>Religion</span>
+              <input type="text" name="religion">
+            </label>
+            <label class="form-field">
+              <span>Caste</span>
+              <input type="text" name="caste">
+            </label>
+            <label class="form-field">
+              <span>Height</span>
+              <input type="text" name="height" placeholder="5'6&quot;">
+            </label>
+            <label class="form-field">
+              <span>Marital Status</span>
+              <select name="maritalStatus">
+                <option value="Never Married">Never Married</option>
+                <option value="Divorced">Divorced</option>
+                <option value="Widowed">Widowed</option>
+              </select>
+            </label>
+            <label class="form-field">
+              <span>Languages</span>
+              <input type="text" name="languages" placeholder="Hindi, English">
+            </label>
+            <label class="form-field">
+              <span>Education</span>
+              <input type="text" name="education">
+            </label>
+            <label class="form-field">
+              <span>Company</span>
+              <input type="text" name="company">
+            </label>
+            <label class="form-field">
+              <span>Designation</span>
+              <input type="text" name="designation">
+            </label>
+            <label class="form-field">
+              <span>Income</span>
+              <input type="text" name="income">
+            </label>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3 class="form-section-title">Preferences</h3>
+          <div class="form-grid compact">
+            <label class="form-field">
+              <span>Wants Kids</span>
+              <select name="wantsKids">
+                <option value="Maybe">Maybe</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </label>
+            <label class="form-field">
+              <span>Open to Relocate</span>
+              <select name="openToRelocate">
+                <option value="Maybe">Maybe</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </label>
+            <label class="form-field">
+              <span>Open to Pets</span>
+              <select name="openToPets">
+                <option value="Maybe">Maybe</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <p class="form-message" id="addClientMessage"></p>
+        <div class="form-actions">
+          <button type="button" class="btn-outline" onclick="showPage('clients')">Cancel</button>
+          <button type="submit" class="btn-primary">Create Client</button>
+        </div>
+      </form>
+    </div>
+
     <!-- Meetings Page -->
     <div class="page" id="page-meetings">
       <div class="section-topbar">
@@ -562,11 +868,70 @@
           <h2 class="section-heading">Meetings</h2>
           <p class="section-sub">Scheduled & past introduction meetings</p>
         </div>
-        <button class="btn-primary">+ Schedule Meeting</button>
+        <button class="btn-primary" onclick="showPage('schedule-meeting')">+ Schedule Meeting</button>
       </div>
       <div class="meetings-full-list" id="meetingsFullList">
         <!-- Filled by JS -->
       </div>
+    </div>
+
+    <!-- Schedule Meeting Page -->
+    <div class="page" id="page-schedule-meeting">
+      <div class="section-topbar">
+        <div>
+          <h2 class="section-heading">Schedule Meeting</h2>
+          <p class="section-sub">Create an introduction or consultation between two clients</p>
+        </div>
+        <button class="btn-outline" onclick="showPage('meetings')">Back to Meetings</button>
+      </div>
+
+      <form class="form-panel" id="scheduleMeetingForm">
+        {% csrf_token %}
+        <div class="form-section">
+          <h3 class="form-section-title">Meeting Details</h3>
+          <div class="form-grid">
+            <label class="form-field">
+              <span>Client</span>
+              <select name="customerId" id="meetingCustomerSelect" required>
+                <option value="">Select client</option>
+              </select>
+            </label>
+            <label class="form-field">
+              <span>Candidate</span>
+              <select name="candidateId" id="meetingCandidateSelect" required>
+                <option value="">Select candidate</option>
+              </select>
+            </label>
+            <label class="form-field">
+              <span>Date and Time</span>
+              <input type="datetime-local" name="scheduledTime" required>
+            </label>
+            <label class="form-field">
+              <span>Meeting Type</span>
+              <select name="meetingType">
+                <option value="Introduction Meeting">Introduction Meeting</option>
+                <option value="Initial Consultation">Initial Consultation</option>
+                <option value="Follow-up Call">Follow-up Call</option>
+                <option value="Family Meeting">Family Meeting</option>
+              </select>
+            </label>
+            <label class="form-field">
+              <span>Status</span>
+              <select name="status">
+                <option value="Scheduled">Scheduled</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <p class="form-message" id="scheduleMeetingMessage"></p>
+        <div class="form-actions">
+          <button type="button" class="btn-outline" onclick="showPage('meetings')">Cancel</button>
+          <button type="submit" class="btn-primary">Schedule Meeting</button>
+        </div>
+      </form>
     </div>
 
     <!-- Analytics Page -->
@@ -588,6 +953,10 @@
         <div class="panel analytics-card">
           <h3 class="analytics-card-title">Client Demographics</h3>
           <div class="demo-list" id="demoList"></div>
+        </div>
+        <div class="panel analytics-card analytics-funnel-card">
+          <h3 class="analytics-card-title">Matchmaking Funnel</h3>
+          <div class="funnel-list" id="funnelList"></div>
         </div>
       </div>
     </div>
@@ -664,7 +1033,7 @@
       <!-- Filled by JS -->
     </div>
     <div class="notif-footer">
-      <a href="#" onclick="return false;">View all activity</a>
+      <a href="#" onclick="showPage('workspace'); document.getElementById('notifDropdown').classList.remove('open'); return false;">View all activity</a>
     </div>
   </div>
 

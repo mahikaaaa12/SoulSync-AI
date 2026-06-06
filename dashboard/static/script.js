@@ -138,17 +138,18 @@ function initAuth() {
 /* ─── Notifications ──────────────────────────── */
 
 const notifData = [
-  { id: 1, type: 'match',   text: 'AI found a new 94% match for Priya Sharma.',         time: '2 min ago',   read: false },
-  { id: 2, type: 'meeting', text: 'Meeting with Arjun M. × Priya S. is in 2 days.',     time: '1 hr ago',    read: false },
-  { id: 3, type: 'client',  text: 'Rohan Mehta updated his preferences.',                time: '3 hrs ago',   read: false },
-  { id: 4, type: 'alert',   text: 'Venue change requested for Jan 14th introduction.',   time: 'Yesterday',   read: true  },
-  { id: 5, type: 'match',   text: 'Compatibility report ready for Kavya Reddy.',         time: 'Yesterday',   read: true  },
+  { id: 1, type: 'client',   text: 'New client assigned: Ananya Iyer is ready for profile review.', time: 'Just now', read: false, page: 'clients' },
+  { id: 2, type: 'followup', text: 'Follow-up due: Priya Sharma needs a post-match check-in.',       time: 'Today',    read: false, page: 'notes' },
+  { id: 3, type: 'meeting',  text: 'Meeting tomorrow: Arjun Mehta × Priya Sharma at 11:00 AM.',      time: 'Tomorrow', read: false, page: 'meetings' },
+  { id: 4, type: 'accepted', text: 'Match accepted: Kavya Reddy approved the latest introduction.',  time: '1 hr ago', read: true,  page: 'matches' },
 ];
 
 const notifIcons = {
   match:   `<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M9 16C9 16 3 12 3 7.5C3 5 5.5 3 8 4C8.7 4.3 9 4.5 9 4.5C9 4.5 9.3 4.3 10 4C12.5 3 15 5 15 7.5C15 12 9 16 9 16Z" stroke="currentColor" stroke-width="1.5"/></svg>`,
   meeting: `<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M6 1V4M12 1V4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2 8H16" stroke="currentColor" stroke-width="1.5"/></svg>`,
   client:  `<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="6" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 17C2.5 13.7 5.4 11 9 11C12.6 11 15.5 13.7 15.5 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  followup:`<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M4 4H14C14.6 4 15 4.4 15 5V12C15 12.6 14.6 13 14 13H8L4 16V5C4 4.4 4.4 4 4 4Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 8H12M7 10.5H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  accepted:`<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M9 16C9 16 3 12 3 7.5C3 5 5.5 3 8 4C8.7 4.3 9 4.5 9 4.5C9 4.5 9.3 4.3 10 4C12.5 3 15 5 15 7.5C15 12 9 16 9 16Z" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 9L8.3 10.8L11.8 7.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   alert:   `<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M9 3L15.5 15H2.5L9 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 8V11M9 13V13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
   system:  `<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M9 5V9L12 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
 };
@@ -174,8 +175,8 @@ function renderNotifDropdown() {
     <div class="notif-item ${n.read ? 'read' : 'unread'}" data-id="${n.id}">
       <div class="notif-icon-wrap notif-type-${n.type}">${notifIcons[n.type] || notifIcons.system}</div>
       <div class="notif-body">
-        <p class="notif-text">${n.text}</p>
-        <p class="notif-time">${n.time}</p>
+        <p class="notif-text">${escapeHtml(n.text)}</p>
+        <p class="notif-time">${escapeHtml(n.time)}</p>
       </div>
       ${!n.read ? '<div class="notif-unread-dot"></div>' : ''}
     </div>
@@ -189,6 +190,10 @@ function renderNotifDropdown() {
       if (item) { item.read = true; }
       renderNotifDropdown();
       updateNotifBadge();
+      if (item?.page) {
+        document.getElementById('notifDropdown')?.classList.remove('open');
+        showPage(item.page);
+      }
     });
   });
 }
@@ -234,10 +239,7 @@ function initNotifications() {
 
   updateNotifBadge();
 
-  // Simulate a real-time notification after 30s
-  setTimeout(() => {
-    addNotification('match', 'New 88% compatibility match ready for Ananya Iyer.');
-  }, 30000);
+  renderNotifDropdown();
 }
 
 /* ─── Custom Cursor ─────────────────────────── */
@@ -291,9 +293,12 @@ sidebarToggle && sidebarToggle.addEventListener('click', () => {
 /* ─── Page Navigation ───────────────────────── */
 const pages = {
   dashboard: { title: 'Dashboard',       sub: "Welcome back, Sarah. Here's what's happening today." },
+  workspace: { title: 'Matchmaker Workspace', sub: 'Your assigned clients, due follow-ups, meetings, and new leads.' },
   clients:   { title: 'Clients',          sub: 'Manage your active client roster.' },
+  'add-client': { title: 'Create Client', sub: 'Add a new client profile to your roster.' },
   matches:   { title: 'Match Suggestions',sub: 'AI-curated compatibility profiles.' },
   meetings:  { title: 'Meetings',         sub: 'Scheduled introductions and consultations.' },
+  'schedule-meeting': { title: 'Schedule Meeting', sub: 'Create an introduction or consultation.' },
   profile:   { title: 'Client Profile',   sub: 'Priya Sharma — Active client since Nov 2024.' },
   notes:     { title: 'Notes',            sub: 'Session notes and matchmaker observations.' },
   analytics: { title: 'Analytics',        sub: 'Performance overview for this quarter.' },
@@ -320,6 +325,8 @@ function showPage(pageId) {
   // Run page-specific init
   if (pageId === 'analytics') renderAnalytics();
   if (pageId === 'meetings')  renderMeetingsFull();
+  if (pageId === 'workspace') renderWorkspace();
+  if (pageId === 'schedule-meeting') renderMeetingCustomerOptions();
   if (pageId === 'matches') {
     loadMatchSuggestions(currentMatchCustomerId || clients[0]?.id);
   }
@@ -362,7 +369,7 @@ let activeStatusFilter = '';
 let currentMatchCustomerId = '';
 let matchSuggestions = [];
 
-const meetings = [
+let meetings = [
   { day: '14', mon: 'Jan', names: 'Priya S. × Arjun M.',    time: '11:00 AM', type: '#22C55E' },
   { day: '16', mon: 'Jan', names: 'Rohan M. × Kavya R.',    time: '03:00 PM', type: '#D4AF37' },
   { day: '19', mon: 'Jan', names: 'Vikram S. × Sneha D.',   time: '02:30 PM', type: '#22C55E' },
@@ -419,6 +426,10 @@ function renderClientTable(tbodyId) {
 function renderMeetingsList() {
   const list = document.getElementById('meetingsList');
   if (!list) return;
+  if (meetings.length === 0) {
+    list.innerHTML = `<div class="empty-state-sm">No meetings scheduled yet.</div>`;
+    return;
+  }
   list.innerHTML = meetings.map(m => `
     <div class="meeting-item">
       <div class="meeting-date-block">
@@ -430,6 +441,140 @@ function renderMeetingsList() {
         <div class="meeting-time">${m.time}</div>
       </div>
       <div class="meeting-type-dot" style="background:${m.type}"></div>
+    </div>
+  `).join('');
+}
+
+function renderWorkspace() {
+  const assignedClients = allCustomers.length || clients.length;
+  const followupsDue = allCustomers.filter(c => c.status === 'matched' || c.status === 'pending').length;
+  const meetingsToday = meetings.length;
+  const newLeads = allCustomers.filter(c => c.statusTag === 'New Lead').length;
+
+  setText('workspaceAssignedClients', assignedClients);
+  setText('workspaceFollowupsDue', followupsDue);
+  setText('workspaceMeetingsToday', meetingsToday);
+  setText('workspaceNewLeads', newLeads);
+  renderWorkspacePriorityQueue();
+  renderWorkspaceAgenda();
+  renderWorkspacePulse();
+  renderWorkspaceActivity();
+}
+
+function workspaceCustomers() {
+  return allCustomers.length ? allCustomers : clients;
+}
+
+function renderWorkspacePriorityQueue() {
+  const list = document.getElementById('workspacePriorityList');
+  if (!list) return;
+
+  const priority = [...workspaceCustomers()]
+    .sort((a, b) => {
+      const rank = { pending: 0, matched: 1, active: 2, inactive: 3 };
+      return (rank[a.status] ?? 9) - (rank[b.status] ?? 9);
+    })
+    .slice(0, 5);
+
+  if (priority.length === 0) {
+    list.innerHTML = `<div class="workspace-empty">No priority clients yet.</div>`;
+    return;
+  }
+
+  list.innerHTML = priority.map((client, index) => {
+    const av = getAvatarStyle(index);
+    return `
+      <div class="workspace-priority-item">
+        <div class="workspace-person">
+          <div class="workspace-avatar" style="background:${av.bg};color:${av.color}">${initials(client.name)}</div>
+          <div>
+            <div class="workspace-name">${escapeHtml(client.name)}</div>
+            <div class="workspace-meta">${escapeHtml(client.city || 'Location pending')} · ${escapeHtml(client.statusTag || 'Profile Review')}</div>
+          </div>
+        </div>
+        <span class="workspace-status-pill ${escapeHtml(client.status)}">${escapeHtml(capitalize(client.status || 'active'))}</span>
+        <button class="row-action-btn" onclick="viewClientById('${escapeHtml(client.id)}')">Open</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderWorkspaceAgenda() {
+  const list = document.getElementById('workspaceAgendaList');
+  if (!list) return;
+
+  const agenda = meetings.slice(0, 4);
+  if (agenda.length === 0) {
+    list.innerHTML = `<div class="workspace-empty">No meetings scheduled. Add one to build the day plan.</div>`;
+    return;
+  }
+
+  list.innerHTML = agenda.map(meeting => `
+    <div class="workspace-agenda-item">
+      <div class="workspace-agenda-date">
+        <strong>${escapeHtml(meeting.day)}</strong>
+        <span>${escapeHtml(meeting.mon)}</span>
+      </div>
+      <div>
+        <div class="workspace-name">${escapeHtml(meeting.names)}</div>
+        <div class="workspace-meta">${escapeHtml(meeting.time)} · ${escapeHtml(meeting.meetingType || 'Introduction Meeting')}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderWorkspacePulse() {
+  const pulse = document.getElementById('workspacePulse');
+  if (!pulse) return;
+
+  const customers = workspaceCustomers();
+  const count = status => customers.filter(c => c.status === status).length;
+  const groups = [
+    ['Pending', count('pending')],
+    ['Active', count('active')],
+    ['Matched', count('matched')],
+    ['Meetings', meetings.length],
+  ];
+
+  pulse.innerHTML = groups.map(([label, value]) => `
+    <div class="pulse-card">
+      <span>${label}</span>
+      <strong>${value}</strong>
+    </div>
+  `).join('');
+}
+
+function renderWorkspaceActivity() {
+  const stream = document.getElementById('workspaceActivityStream');
+  if (!stream) return;
+
+  const customers = workspaceCustomers();
+  const newest = customers.slice(-1)[0];
+  const nextMeeting = meetings[0];
+  const activeCount = customers.filter(c => c.status === 'active').length;
+  const items = [
+    {
+      tag: 'Intake',
+      title: newest ? `${newest.name} joined the roster` : 'Roster ready for intake',
+      meta: newest ? `${newest.city || 'City pending'} · ${newest.statusTag}` : 'Create a client to begin'
+    },
+    {
+      tag: 'Calendar',
+      title: nextMeeting ? nextMeeting.names : 'No upcoming introductions',
+      meta: nextMeeting ? `${nextMeeting.day} ${nextMeeting.mon} · ${nextMeeting.time}` : 'Schedule the first meeting'
+    },
+    {
+      tag: 'Search',
+      title: `${activeCount} active searches in progress`,
+      meta: 'Use matches to shortlist introductions'
+    },
+  ];
+
+  stream.innerHTML = items.map(item => `
+    <div class="workspace-activity-item">
+      <span class="workspace-activity-tag">${escapeHtml(item.tag)}</span>
+      <div class="workspace-name">${escapeHtml(item.title)}</div>
+      <div class="workspace-meta">${escapeHtml(item.meta)}</div>
     </div>
   `).join('');
 }
@@ -543,7 +688,7 @@ function renderNotesTimeline() {
   `).join('');
 }
 
-function renderMeetingsFull() {
+function renderMeetingsFullStaticArchive() {
   const list = document.getElementById('meetingsFullList');
   if (!list || list.children.length > 0) return;
   const allMeetings = [
@@ -571,50 +716,117 @@ function renderMeetingsFull() {
   `).join('');
 }
 
+function renderMeetingsFull() {
+  const list = document.getElementById('meetingsFullList');
+  if (!list) return;
+  if (meetings.length === 0) {
+    list.innerHTML = `<div class="meeting-full-card"><div class="meeting-full-info"><div class="mf-title">No meetings scheduled yet</div><div class="mf-meta">Use Schedule Meeting to create the first one.</div></div></div>`;
+    return;
+  }
+
+  const statusClass = { scheduled: 'msb-scheduled', completed: 'msb-completed', cancelled: 'msb-cancelled' };
+  const statusLabel = { scheduled: 'Scheduled', completed: 'Completed', cancelled: 'Cancelled' };
+
+  list.innerHTML = meetings.map(m => `
+    <div class="meeting-full-card">
+      <div class="meeting-full-date">
+        <div class="mfd-day">${escapeHtml(m.day)}</div>
+        <div class="mfd-mon">${escapeHtml(m.mon)}</div>
+      </div>
+      <div class="meeting-full-info">
+        <div class="mf-title">${escapeHtml(m.names)}</div>
+        <div class="mf-meta">${escapeHtml(m.time)} · ${escapeHtml(m.meetingType || 'Introduction Meeting')}</div>
+      </div>
+      <span class="meeting-status-badge ${statusClass[m.status] || statusClass.scheduled}">${statusLabel[m.status] || 'Scheduled'}</span>
+    </div>
+  `).join('');
+}
+
 function renderAnalytics() {
   const barChart = document.getElementById('barChart');
   const barLabels = document.getElementById('barLabels');
-  if (!barChart || barChart.children.length > 0) return;
+  if (barChart && barLabels && barChart.children.length === 0) {
+    const monthData = [
+      { mon: 'Oct', val: 18 },
+      { mon: 'Nov', val: 24 },
+      { mon: 'Dec', val: 31 },
+      { mon: 'Jan', val: 22 },
+    ];
 
-  const monthData = [
-    { mon: 'Oct', val: 18 },
-    { mon: 'Nov', val: 24 },
-    { mon: 'Dec', val: 31 },
-    { mon: 'Jan', val: 22 },
-  ];
+    const max = Math.max(...monthData.map(d => d.val));
 
-  const max = Math.max(...monthData.map(d => d.val));
+    barChart.innerHTML = monthData.map((d, i) => `
+      <div class="bar-item">
+        <div class="bar-val">${d.val}</div>
+        <div class="bar-fill ${i === 2 ? 'gold' : ''}" style="height:${Math.round((d.val / max) * 100)}%"></div>
+      </div>
+    `).join('');
 
-  barChart.innerHTML = monthData.map((d, i) => `
-    <div class="bar-item">
-      <div class="bar-val">${d.val}</div>
-      <div class="bar-fill ${i === 2 ? 'gold' : ''}" style="height:${Math.round((d.val / max) * 100)}%"></div>
-    </div>
-  `).join('');
-
-  barLabels.innerHTML = monthData.map(d => `
-    <div class="bar-label">${d.mon}</div>
-  `).join('');
+    barLabels.innerHTML = monthData.map(d => `
+      <div class="bar-label">${d.mon}</div>
+    `).join('');
+  }
 
   const demoList = document.getElementById('demoList');
-  if (!demoList || demoList.children.length > 0) return;
+  if (demoList && demoList.children.length === 0) {
+    const demos = [
+      { label: '25–30 yrs', pct: 38 },
+      { label: '31–35 yrs', pct: 44 },
+      { label: '36–40 yrs', pct: 14 },
+      { label: '41+ yrs',   pct:  4 },
+    ];
 
-  const demos = [
-    { label: '25–30 yrs', pct: 38 },
-    { label: '31–35 yrs', pct: 44 },
-    { label: '36–40 yrs', pct: 14 },
-    { label: '41+ yrs',   pct:  4 },
+    demoList.innerHTML = demos.map(d => `
+      <div class="demo-item">
+        <span class="demo-label">${d.label}</span>
+        <div class="demo-track">
+          <div class="demo-fill" style="width:${d.pct}%"></div>
+        </div>
+        <span class="demo-pct">${d.pct}%</span>
+      </div>
+    `).join('');
+  }
+
+  renderFunnel();
+}
+
+function renderFunnel() {
+  const funnelList = document.getElementById('funnelList');
+  if (!funnelList) return;
+
+  const customers = allCustomers.length ? allCustomers : clients;
+  const total = customers.length || 1;
+  const countWhere = predicate => customers.filter(predicate).length;
+  const activeOrLater = ['Active Search', 'Matches Sent', 'Meeting Scheduled', 'Engagement In Progress', 'Closed'];
+  const matchOrLater = ['Matches Sent', 'Meeting Scheduled', 'Engagement In Progress', 'Closed'];
+  const meetingOrLater = ['Meeting Scheduled', 'Engagement In Progress', 'Closed'];
+
+  const stages = [
+    { label: 'Lead Created', count: customers.length },
+    { label: 'Verified', count: countWhere(c => c.statusTag !== 'New Lead') },
+    { label: 'Active Search', count: countWhere(c => activeOrLater.includes(c.statusTag)) },
+    { label: 'Match Sent', count: countWhere(c => matchOrLater.includes(c.statusTag)) },
+    { label: 'Meeting Scheduled', count: countWhere(c => meetingOrLater.includes(c.statusTag)) },
+    { label: 'Engagement', count: countWhere(c => c.statusTag === 'Engagement In Progress' || c.statusTag === 'Closed') },
+    { label: 'Married', count: countWhere(c => c.statusTag === 'Closed') },
   ];
 
-  demoList.innerHTML = demos.map(d => `
-    <div class="demo-item">
-      <span class="demo-label">${d.label}</span>
-      <div class="demo-track">
-        <div class="demo-fill" style="width:${d.pct}%"></div>
+  funnelList.innerHTML = stages.map((stage, index) => {
+    const pct = Math.max(4, Math.round((stage.count / total) * 100));
+    const arrow = index < stages.length - 1 ? '<span class="funnel-arrow">→</span>' : '';
+    return `
+      <div class="funnel-item">
+        <div class="funnel-row">
+          <span class="funnel-label">${stage.label}</span>
+          ${arrow}
+          <span class="funnel-count">${stage.count}</span>
+        </div>
+        <div class="demo-track">
+          <div class="demo-fill" style="width:${pct}%"></div>
+        </div>
       </div>
-      <span class="demo-pct">${d.pct}%</span>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 /* ─── Dynamic Profile Renderer ─────────────── */
@@ -717,6 +929,8 @@ function viewClient(index) {
       .map(t => `<span class="tag">${t}</span>`).join('');
   }
 
+  renderProfileCompletion(c, poolProfile);
+
   // Status tag in timeline section
   const statusTimeline = document.getElementById('matchmakingStatusTimeline');
   if (statusTimeline) {
@@ -754,6 +968,72 @@ function viewClient(index) {
   loadMatchSuggestions(c.id);
 
   showPage('profile');
+}
+
+function viewClientById(clientId) {
+  const index = clients.findIndex(c => c.id === clientId);
+  if (index >= 0) {
+    viewClient(index);
+    return;
+  }
+  loadCustomers()
+    .then(() => {
+      const loadedIndex = clients.findIndex(c => c.id === clientId);
+      if (loadedIndex >= 0) viewClient(loadedIndex);
+    });
+}
+
+function renderProfileCompletion(customer, poolProfile) {
+  const completion = calculateProfileCompletion(customer, poolProfile);
+  const value = document.getElementById('profileCompletionValue');
+  const fill = document.getElementById('profileCompletionFill');
+  const sections = document.getElementById('profileCompletionSections');
+
+  if (value) value.textContent = `${completion.score}% Complete`;
+  if (fill) fill.style.width = `${completion.score}%`;
+  if (sections) {
+    sections.innerHTML = completion.sections.map(section => `
+      <span title="${escapeHtml(section.complete ? 'Complete' : 'Incomplete')}">${escapeHtml(section.label)}</span>
+    `).join('');
+  }
+}
+
+function calculateProfileCompletion(customer, poolProfile) {
+  const profile = poolProfile || customer;
+  const sections = [
+    {
+      label: 'Basic Information',
+      weight: 20,
+      complete: hasValues(customer.name, customer.age, customer.city, customer.email, customer.gender)
+    },
+    {
+      label: 'Family Information',
+      weight: 15,
+      complete: hasValues(profile.religion, profile.caste, profile.maritalStatus || customer.maritalStatus)
+    },
+    {
+      label: 'Career',
+      weight: 20,
+      complete: hasValues(profile.education, profile.income, profile.company, profile.designation)
+    },
+    {
+      label: 'Preferences',
+      weight: 27,
+      complete: hasValues(profile.wantsKids, profile.openToRelocate, profile.openToPets)
+    },
+    {
+      label: 'Photos',
+      weight: 20,
+      complete: Boolean(profile.photo || profile.photoUrl || profile.avatarUrl)
+    }
+  ];
+
+  const score = sections.reduce((total, section) => total + (section.complete ? section.weight : 0), 0);
+  return { score, sections };
+}
+
+function hasValues(...values) {
+  return values.every(value => value !== undefined && value !== null && String(value).trim() !== '');
 }
 
 function renderCustomerActivityTimeline(customer) {
@@ -894,6 +1174,10 @@ function applyCustomerData(data) {
   window.femaleProfiles = clients.filter(c => c.gender === 'Female');
   renderClientTable('clientTableBody');
   renderClientTable('clientTableBody2');
+  renderMeetingCustomerOptions();
+  updateDashboardMetrics();
+  renderWorkspace();
+  renderFunnel();
 }
 
 function loadCustomers(filters = {}) {
@@ -959,13 +1243,14 @@ function observeAnimations() {
 
 /* ─── Init ──────────────────────────────────── */
 function init() {
-  loadCustomers()
-    .then(data => {
+  initForms();
+  Promise.all([loadCustomers(), loadMeetings()])
+    .then(([data]) => {
       allCustomers = data;
       initDirectoryFilters();
+      renderWorkspace();
 
       // Initial Render calls
-      renderMeetingsList();
       if (clients[0]) {
         currentMatchCustomerId = clients[0].id;
         loadMatchSuggestions(currentMatchCustomerId);
@@ -994,4 +1279,180 @@ function escapeHtml(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+}
+
+function loadAllCustomers() {
+  return fetch('/api/customers/')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Customer API request failed with ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      allCustomers = data;
+      populateDirectoryFilters(allCustomers);
+      return data;
+    });
+}
+
+function loadMeetings() {
+  return fetch('/api/meetings/')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Meeting API request failed with ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      meetings = data;
+      renderMeetingsList();
+      renderMeetingsFull();
+      updateDashboardMetrics();
+      renderWorkspace();
+      return data;
+    })
+    .catch(err => {
+      console.error('Error fetching meetings:', err);
+      meetings = [];
+      renderMeetingsList();
+      renderMeetingsFull();
+      updateDashboardMetrics();
+      renderWorkspace();
+      return [];
+    });
+}
+
+function updateDashboardMetrics() {
+  const source = allCustomers.length ? allCustomers : clients;
+  const scheduledMeetings = meetings.filter(m => m.status === 'scheduled').length;
+  const pendingReviews = source.filter(c => c.status === 'pending').length;
+
+  setCounterValue('Total Clients', source.length);
+  setCounterValue('Meetings Scheduled', scheduledMeetings);
+  setCounterValue('Pending Reviews', pendingReviews);
+
+  const clientsBadge = document.querySelector('.nav-item[data-page="clients"] .nav-badge');
+  if (clientsBadge) clientsBadge.textContent = source.length;
+}
+
+function setCounterValue(label, value) {
+  const cards = document.querySelectorAll('.kpi-card');
+  cards.forEach(card => {
+    const labelEl = card.querySelector('.kpi-label');
+    const valueEl = card.querySelector('.kpi-value');
+    if (labelEl?.textContent.trim() === label && valueEl) {
+      valueEl.dataset.target = value;
+      valueEl.textContent = value;
+    }
+  });
+}
+
+function renderMeetingCustomerOptions() {
+  const selects = [document.getElementById('meetingCustomerSelect'), document.getElementById('meetingCandidateSelect')];
+  if (selects.every(select => !select)) return;
+
+  const options = (allCustomers.length ? allCustomers : clients)
+    .map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)} · ${escapeHtml(c.city || '')}</option>`)
+    .join('');
+
+  selects.forEach(select => {
+    if (!select) return;
+    const selected = select.value;
+    const first = select.querySelector('option')?.outerHTML || '<option value="">Select client</option>';
+    select.innerHTML = first + options;
+    select.value = [...select.options].some(option => option.value === selected) ? selected : '';
+  });
+}
+
+function getCookie(name) {
+  const cookies = document.cookie ? document.cookie.split(';') : [];
+  for (const cookie of cookies) {
+    const trimmed = cookie.trim();
+    if (trimmed.startsWith(`${name}=`)) {
+      return decodeURIComponent(trimmed.slice(name.length + 1));
+    }
+  }
+  return '';
+}
+
+function formDataToPayload(form) {
+  return Object.fromEntries(new FormData(form).entries());
+}
+
+function setFormMessage(id, text, type = '') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = `form-message ${type}`.trim();
+}
+
+function postJson(url, payload) {
+  return fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken'),
+    },
+    body: JSON.stringify(payload),
+  }).then(async response => {
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || `Request failed with ${response.status}`);
+    }
+    return data;
+  });
+}
+
+function initForms() {
+  const addClientForm = document.getElementById('addClientForm');
+  addClientForm && addClientForm.addEventListener('submit', event => {
+    event.preventDefault();
+    setFormMessage('addClientMessage', 'Creating client...');
+
+    postJson('/api/customers/', formDataToPayload(addClientForm))
+      .then(customer => {
+        setFormMessage('addClientMessage', `${customer.name} has been added to the roster.`, 'success');
+        addClientForm.reset();
+        addNotification('client', `New client created: ${customer.name}.`);
+        return loadAllCustomers()
+          .then(() => loadCustomers(getDirectoryFilters()))
+          .then(() => {
+            const newIndex = clients.findIndex(c => c.id === customer.id);
+            if (newIndex >= 0) {
+              viewClient(newIndex);
+            } else {
+              showPage('clients');
+            }
+          });
+      })
+      .catch(err => setFormMessage('addClientMessage', err.message, 'error'));
+  });
+
+  const scheduleMeetingForm = document.getElementById('scheduleMeetingForm');
+  scheduleMeetingForm && scheduleMeetingForm.addEventListener('submit', event => {
+    event.preventDefault();
+    const payload = formDataToPayload(scheduleMeetingForm);
+    if (payload.customerId === payload.candidateId) {
+      setFormMessage('scheduleMeetingMessage', 'Choose two different clients for a meeting.', 'error');
+      return;
+    }
+
+    setFormMessage('scheduleMeetingMessage', 'Scheduling meeting...');
+    postJson('/api/meetings/', payload)
+      .then(meeting => {
+        setFormMessage('scheduleMeetingMessage', 'Meeting scheduled and dashboard updated.', 'success');
+        scheduleMeetingForm.reset();
+        addNotification('meeting', `Meeting scheduled: ${meeting.names} at ${meeting.time}.`);
+        return Promise.all([loadMeetings(), loadAllCustomers()])
+          .then(() => loadCustomers(getDirectoryFilters()))
+          .then(() => showPage('meetings'));
+      })
+      .catch(err => setFormMessage('scheduleMeetingMessage', err.message, 'error'));
+  });
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
 }
