@@ -269,6 +269,10 @@ img {
   margin-top: 1px;
 }
 
+video{
+  width: 855px;
+}
+
 /* ─── Top Bar ───────────────────────────────── */
 .topbar {
   position: sticky;
