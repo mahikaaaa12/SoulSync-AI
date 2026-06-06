@@ -4,10 +4,14 @@
 
 /* ─── Auth System ────────────────────────────── */
 
-const AUTH_KEY = 'soulsync_user';
+const AUTH_KEY = "soulsync_user";
 
 function getUser() {
-  try { return JSON.parse(localStorage.getItem(AUTH_KEY)); } catch { return null; }
+  try {
+    return JSON.parse(localStorage.getItem(AUTH_KEY));
+  } catch {
+    return null;
+  }
 }
 
 function saveUser(user) {
@@ -17,114 +21,130 @@ function saveUser(user) {
 function applyUserToUI(user) {
   if (!user) return;
 
-  const name = user.name || 'Matchmaker';
-  const role = user.role || 'Matchmaker';
+  const name = user.name || "Matchmaker";
+  const role = user.role || "Matchmaker";
   const initials2 = initials(name);
 
   // Sidebar user widget
-  const sidebarName = document.querySelector('.user-name');
-  const sidebarRole = document.querySelector('.user-role');
-  const sidebarAvatar = document.querySelector('.user-avatar span');
+  const sidebarName = document.querySelector(".user-name");
+  const sidebarRole = document.querySelector(".user-role");
+  const sidebarAvatar = document.querySelector(".user-avatar span");
   if (sidebarName) sidebarName.textContent = name;
   if (sidebarRole) sidebarRole.textContent = role;
   if (sidebarAvatar) sidebarAvatar.textContent = initials2;
 
   // Topbar avatar
-  const topbarAvatar = document.getElementById('topbarAvatar');
-  const menu = document.getElementById('dropdownMenu');
+  const topbarAvatar = document.getElementById("topbarAvatar");
+  const menu = document.getElementById("dropdownMenu");
 
   if (topbarAvatar && menu) {
-    topbarAvatar.addEventListener('click', () => {
-      menu.classList.toggle('show');
+    topbarAvatar.addEventListener("click", () => {
+      menu.classList.toggle("show");
     });
   }
   if (topbarAvatar) topbarAvatar.textContent = initials2;
 
   // Dashboard welcome subtitle
-  pages.dashboard.sub = `Welcome back, ${name.split(' ')[0]}. Here's what's happening today.`;
-  const ps = document.querySelector('.page-subtitle');
-  if (ps && document.getElementById('page-dashboard').classList.contains('active')) {
+  pages.dashboard.sub = `Welcome back, ${name.split(" ")[0]}. Here's what's happening today.`;
+  const ps = document.querySelector(".page-subtitle");
+  if (
+    ps &&
+    document.getElementById("page-dashboard").classList.contains("active")
+  ) {
     ps.textContent = pages.dashboard.sub;
   }
 
   // Settings page inputs
-  const settingsInputs = document.querySelectorAll('.settings-input');
+  const settingsInputs = document.querySelectorAll(".settings-input");
   if (settingsInputs[0]) settingsInputs[0].value = name;
-  if (settingsInputs[1]) settingsInputs[1].value = user.email || '';
+  if (settingsInputs[1]) settingsInputs[1].value = user.email || "";
   if (settingsInputs[2]) settingsInputs[2].value = role;
 
   // Notes author name
-  notes.forEach(n => { if (n.author !== 'System Alert') n.author = name; });
+  notes.forEach((n) => {
+    if (n.author !== "System Alert") n.author = name;
+  });
 
   // New notes use this name
   window._currentUserName = name;
 }
 
 function showAuthModal() {
-  const overlay = document.getElementById('authOverlay');
-  if (overlay) overlay.style.display = 'flex';
+  const overlay = document.getElementById("authOverlay");
+  if (overlay) overlay.style.display = "flex";
 }
 
 function hideAuthModal() {
-  const overlay = document.getElementById('authOverlay');
-  if (overlay) overlay.style.display = 'none';
+  const overlay = document.getElementById("authOverlay");
+  if (overlay) overlay.style.display = "none";
 }
 
 function initAuth() {
-  const overlay    = document.getElementById('authOverlay');
-  const loginForm  = document.getElementById('loginForm');
-  const signupForm = document.getElementById('signupForm');
-  const goSignup   = document.getElementById('goToSignup');
-  const goLogin    = document.getElementById('goToLogin');
-  const loginBtn   = document.getElementById('loginBtn');
-  const signupBtn  = document.getElementById('signupBtn');
-  const loginError = document.getElementById('loginError');
-  const signupError= document.getElementById('signupError');
+  const overlay = document.getElementById("authOverlay");
+  const loginForm = document.getElementById("loginForm");
+  const signupForm = document.getElementById("signupForm");
+  const goSignup = document.getElementById("goToSignup");
+  const goLogin = document.getElementById("goToLogin");
+  const loginBtn = document.getElementById("loginBtn");
+  const signupBtn = document.getElementById("signupBtn");
+  const loginError = document.getElementById("loginError");
+  const signupError = document.getElementById("signupError");
 
   // Toggle between login / signup
-  goSignup && goSignup.addEventListener('click', () => {
-    loginForm.style.display = 'none';
-    signupForm.style.display = 'block';
-  });
-  goLogin && goLogin.addEventListener('click', () => {
-    signupForm.style.display = 'none';
-    loginForm.style.display = 'block';
-  });
+  goSignup &&
+    goSignup.addEventListener("click", () => {
+      loginForm.style.display = "none";
+      signupForm.style.display = "block";
+    });
+  goLogin &&
+    goLogin.addEventListener("click", () => {
+      signupForm.style.display = "none";
+      loginForm.style.display = "block";
+    });
 
   // Login submit
-  loginBtn && loginBtn.addEventListener('click', () => {
-    const name     = document.getElementById('loginName').value.trim();
-    const email    = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    if (!name || !email || !password) {
-      loginError.textContent = 'Please fill in all fields.';
-      return;
-    }
-    loginError.textContent = '';
-    const user = { name, email, role: 'Matchmaker', password };
-    saveUser(user);
-    applyUserToUI(user);
-    hideAuthModal();
-    addNotification('system', `Welcome back, ${name.split(' ')[0]}! You're now signed in.`);
-  });
+  loginBtn &&
+    loginBtn.addEventListener("click", () => {
+      const name = document.getElementById("loginName").value.trim();
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value;
+      if (!name || !email || !password) {
+        loginError.textContent = "Please fill in all fields.";
+        return;
+      }
+      loginError.textContent = "";
+      const user = { name, email, role: "Matchmaker", password };
+      saveUser(user);
+      applyUserToUI(user);
+      hideAuthModal();
+      addNotification(
+        "system",
+        `Welcome back, ${name.split(" ")[0]}! You're now signed in.`,
+      );
+    });
 
   // Signup submit
-  signupBtn && signupBtn.addEventListener('click', () => {
-    const name     = document.getElementById('signupName').value.trim();
-    const email    = document.getElementById('signupEmail').value.trim();
-    const role     = document.getElementById('signupRole').value.trim() || 'Matchmaker';
-    const password = document.getElementById('signupPassword').value;
-    if (!name || !email || !password) {
-      signupError.textContent = 'Please fill in all required fields.';
-      return;
-    }
-    signupError.textContent = '';
-    const user = { name, email, role, password };
-    saveUser(user);
-    applyUserToUI(user);
-    hideAuthModal();
-    addNotification('system', `Account created! Welcome to SoulSync, ${name.split(' ')[0]}.`);
-  });
+  signupBtn &&
+    signupBtn.addEventListener("click", () => {
+      const name = document.getElementById("signupName").value.trim();
+      const email = document.getElementById("signupEmail").value.trim();
+      const role =
+        document.getElementById("signupRole").value.trim() || "Matchmaker";
+      const password = document.getElementById("signupPassword").value;
+      if (!name || !email || !password) {
+        signupError.textContent = "Please fill in all required fields.";
+        return;
+      }
+      signupError.textContent = "";
+      const user = { name, email, role, password };
+      saveUser(user);
+      applyUserToUI(user);
+      hideAuthModal();
+      addNotification(
+        "system",
+        `Account created! Welcome to SoulSync, ${name.split(" ")[0]}.`,
+      );
+    });
 
   // Check if already logged in
   const existing = getUser();
@@ -138,60 +158,94 @@ function initAuth() {
 /* ─── Notifications ──────────────────────────── */
 
 const notifData = [
-  { id: 1, type: 'client',   text: 'New client assigned: Ananya Iyer is ready for profile review.', time: 'Just now', read: false, page: 'clients' },
-  { id: 2, type: 'followup', text: 'Follow-up due: Priya Sharma needs a post-match check-in.',       time: 'Today',    read: false, page: 'notes' },
-  { id: 3, type: 'meeting',  text: 'Meeting tomorrow: Arjun Mehta × Priya Sharma at 11:00 AM.',      time: 'Tomorrow', read: false, page: 'meetings' },
-  { id: 4, type: 'accepted', text: 'Match accepted: Kavya Reddy approved the latest introduction.',  time: '1 hr ago', read: true,  page: 'matches' },
+  {
+    id: 1,
+    type: "client",
+    text: "New client assigned: Ananya Iyer is ready for profile review.",
+    time: "Just now",
+    read: false,
+    page: "clients",
+  },
+  {
+    id: 2,
+    type: "followup",
+    text: "Follow-up due: Priya Sharma needs a post-match check-in.",
+    time: "Today",
+    read: false,
+    page: "notes",
+  },
+  {
+    id: 3,
+    type: "meeting",
+    text: "Meeting tomorrow: Arjun Mehta × Priya Sharma at 11:00 AM.",
+    time: "Tomorrow",
+    read: false,
+    page: "meetings",
+  },
+  {
+    id: 4,
+    type: "accepted",
+    text: "Match accepted: Kavya Reddy approved the latest introduction.",
+    time: "1 hr ago",
+    read: true,
+    page: "matches",
+  },
 ];
 
 const notifIcons = {
-  match:   `<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M9 16C9 16 3 12 3 7.5C3 5 5.5 3 8 4C8.7 4.3 9 4.5 9 4.5C9 4.5 9.3 4.3 10 4C12.5 3 15 5 15 7.5C15 12 9 16 9 16Z" stroke="currentColor" stroke-width="1.5"/></svg>`,
+  match: `<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M9 16C9 16 3 12 3 7.5C3 5 5.5 3 8 4C8.7 4.3 9 4.5 9 4.5C9 4.5 9.3 4.3 10 4C12.5 3 15 5 15 7.5C15 12 9 16 9 16Z" stroke="currentColor" stroke-width="1.5"/></svg>`,
   meeting: `<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M6 1V4M12 1V4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2 8H16" stroke="currentColor" stroke-width="1.5"/></svg>`,
-  client:  `<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="6" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 17C2.5 13.7 5.4 11 9 11C12.6 11 15.5 13.7 15.5 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  followup:`<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M4 4H14C14.6 4 15 4.4 15 5V12C15 12.6 14.6 13 14 13H8L4 16V5C4 4.4 4.4 4 4 4Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 8H12M7 10.5H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  accepted:`<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M9 16C9 16 3 12 3 7.5C3 5 5.5 3 8 4C8.7 4.3 9 4.5 9 4.5C9 4.5 9.3 4.3 10 4C12.5 3 15 5 15 7.5C15 12 9 16 9 16Z" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 9L8.3 10.8L11.8 7.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  alert:   `<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M9 3L15.5 15H2.5L9 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 8V11M9 13V13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  system:  `<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M9 5V9L12 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  client: `<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="6" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 17C2.5 13.7 5.4 11 9 11C12.6 11 15.5 13.7 15.5 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  followup: `<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M4 4H14C14.6 4 15 4.4 15 5V12C15 12.6 14.6 13 14 13H8L4 16V5C4 4.4 4.4 4 4 4Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 8H12M7 10.5H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  accepted: `<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M9 16C9 16 3 12 3 7.5C3 5 5.5 3 8 4C8.7 4.3 9 4.5 9 4.5C9 4.5 9.3 4.3 10 4C12.5 3 15 5 15 7.5C15 12 9 16 9 16Z" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 9L8.3 10.8L11.8 7.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  alert: `<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M9 3L15.5 15H2.5L9 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 8V11M9 13V13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  system: `<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M9 5V9L12 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
 };
 
 function unreadCount() {
-  return notifData.filter(n => !n.read).length;
+  return notifData.filter((n) => !n.read).length;
 }
 
 function updateNotifBadge() {
-  const dot = document.getElementById('notifDot');
+  const dot = document.getElementById("notifDot");
   if (!dot) return;
-  dot.style.display = unreadCount() > 0 ? 'block' : 'none';
+  dot.style.display = unreadCount() > 0 ? "block" : "none";
 }
 
 function renderNotifDropdown() {
-  const list = document.getElementById('notifList');
+  const list = document.getElementById("notifList");
   if (!list) return;
   if (notifData.length === 0) {
     list.innerHTML = `<div class="notif-empty">All caught up! No notifications.</div>`;
     return;
   }
-  list.innerHTML = notifData.map(n => `
-    <div class="notif-item ${n.read ? 'read' : 'unread'}" data-id="${n.id}">
+  list.innerHTML = notifData
+    .map(
+      (n) => `
+    <div class="notif-item ${n.read ? "read" : "unread"}" data-id="${n.id}">
       <div class="notif-icon-wrap notif-type-${n.type}">${notifIcons[n.type] || notifIcons.system}</div>
       <div class="notif-body">
         <p class="notif-text">${escapeHtml(n.text)}</p>
         <p class="notif-time">${escapeHtml(n.time)}</p>
       </div>
-      ${!n.read ? '<div class="notif-unread-dot"></div>' : ''}
+      ${!n.read ? '<div class="notif-unread-dot"></div>' : ""}
     </div>
-  `).join('');
+  `,
+    )
+    .join("");
 
   // Click to mark individual as read
-  list.querySelectorAll('.notif-item').forEach(el => {
-    el.addEventListener('click', () => {
+  list.querySelectorAll(".notif-item").forEach((el) => {
+    el.addEventListener("click", () => {
       const id = parseInt(el.dataset.id);
-      const item = notifData.find(n => n.id === id);
-      if (item) { item.read = true; }
+      const item = notifData.find((n) => n.id === id);
+      if (item) {
+        item.read = true;
+      }
       renderNotifDropdown();
       updateNotifBadge();
       if (item?.page) {
-        document.getElementById('notifDropdown')?.classList.remove('open');
+        document.getElementById("notifDropdown")?.classList.remove("open");
         showPage(item.page);
       }
     });
@@ -200,42 +254,43 @@ function renderNotifDropdown() {
 
 function addNotification(type, text) {
   const newId = Date.now();
-  notifData.unshift({ id: newId, type, text, time: 'Just now', read: false });
+  notifData.unshift({ id: newId, type, text, time: "Just now", read: false });
   renderNotifDropdown();
   updateNotifBadge();
 }
 
 function initNotifications() {
-  const btn      = document.getElementById('notifBtn');
-  const dropdown = document.getElementById('notifDropdown');
-  const markRead = document.getElementById('markAllRead');
+  const btn = document.getElementById("notifBtn");
+  const dropdown = document.getElementById("notifDropdown");
+  const markRead = document.getElementById("markAllRead");
 
   if (!btn || !dropdown) return;
 
-  btn.addEventListener('click', e => {
+  btn.addEventListener("click", (e) => {
     e.stopPropagation();
-    const isOpen = dropdown.classList.contains('open');
-    dropdown.classList.toggle('open', !isOpen);
+    const isOpen = dropdown.classList.contains("open");
+    dropdown.classList.toggle("open", !isOpen);
     if (!isOpen) {
       renderNotifDropdown();
       // Anchor dropdown under button
       const rect = btn.getBoundingClientRect();
-      dropdown.style.top  = (rect.bottom + 8) + 'px';
-      dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+      dropdown.style.top = rect.bottom + 8 + "px";
+      dropdown.style.right = window.innerWidth - rect.right + "px";
     }
   });
 
-  document.addEventListener('click', e => {
+  document.addEventListener("click", (e) => {
     if (!dropdown.contains(e.target) && e.target !== btn) {
-      dropdown.classList.remove('open');
+      dropdown.classList.remove("open");
     }
   });
 
-  markRead && markRead.addEventListener('click', () => {
-    notifData.forEach(n => n.read = true);
-    renderNotifDropdown();
-    updateNotifBadge();
-  });
+  markRead &&
+    markRead.addEventListener("click", () => {
+      notifData.forEach((n) => (n.read = true));
+      renderNotifDropdown();
+      updateNotifBadge();
+    });
 
   updateNotifBadge();
 
@@ -243,12 +298,14 @@ function initNotifications() {
 }
 
 /* ─── Custom Cursor ─────────────────────────── */
-const cursor = document.getElementById('cursor');
+const cursor = document.getElementById("cursor");
 
-let mouseX = 0, mouseY = 0;
-let cursorX = 0, cursorY = 0;
+let mouseX = 0,
+  mouseY = 0;
+let cursorX = 0,
+  cursorY = 0;
 
-document.addEventListener('mousemove', e => {
+document.addEventListener("mousemove", (e) => {
   mouseX = e.clientX;
   mouseY = e.clientY;
 });
@@ -257,89 +314,128 @@ function animateCursor() {
   cursorX += (mouseX - cursorX) * 0.18;
   cursorY += (mouseY - cursorY) * 0.18;
   if (cursor) {
-    cursor.style.left = cursorX + 'px';
-    cursor.style.top  = cursorY + 'px';
+    cursor.style.left = cursorX + "px";
+    cursor.style.top = cursorY + "px";
   }
   requestAnimationFrame(animateCursor);
 }
 animateCursor();
 
-document.querySelectorAll('a, button, input, select, textarea, .nav-item, .kpi-card, .match-card, .client-table tbody tr').forEach(el => {
-  el.addEventListener('mouseenter', () => cursor && cursor.classList.add('hovering'));
-  el.addEventListener('mouseleave', () => cursor && cursor.classList.remove('hovering'));
-});
+document
+  .querySelectorAll(
+    "a, button, input, select, textarea, .nav-item, .kpi-card, .match-card, .client-table tbody tr",
+  )
+  .forEach((el) => {
+    el.addEventListener(
+      "mouseenter",
+      () => cursor && cursor.classList.add("hovering"),
+    );
+    el.addEventListener(
+      "mouseleave",
+      () => cursor && cursor.classList.remove("hovering"),
+    );
+  });
 
 /* ─── Sidebar Toggle ────────────────────────── */
-const sidebar = document.getElementById('sidebar');
-const sidebarToggle = document.getElementById('sidebarToggle');
-const mainContent = document.querySelector('.main-content');
+const sidebar = document.getElementById("sidebar");
+const sidebarToggle = document.getElementById("sidebarToggle");
+const mainContent = document.querySelector(".main-content");
 let sidebarOpen = true;
 
-sidebarToggle && sidebarToggle.addEventListener('click', () => {
-  if (window.innerWidth <= 768) {
-    sidebar.classList.toggle('mobile-open');
-  } else {
-    sidebarOpen = !sidebarOpen;
-    if (sidebarOpen) {
-      sidebar.classList.remove('collapsed');
-      mainContent.classList.remove('expanded');
+sidebarToggle &&
+  sidebarToggle.addEventListener("click", () => {
+    if (window.innerWidth <= 768) {
+      sidebar.classList.toggle("mobile-open");
     } else {
-      sidebar.classList.add('collapsed');
-      mainContent.classList.add('expanded');
+      sidebarOpen = !sidebarOpen;
+      if (sidebarOpen) {
+        sidebar.classList.remove("collapsed");
+        mainContent.classList.remove("expanded");
+      } else {
+        sidebar.classList.add("collapsed");
+        mainContent.classList.add("expanded");
+      }
     }
-  }
-});
+  });
 
 /* ─── Page Navigation ───────────────────────── */
 const pages = {
-  dashboard: { title: 'Dashboard',       sub: "Welcome back, Sarah. Here's what's happening today." },
-  workspace: { title: 'Matchmaker Workspace', sub: 'Your assigned clients, due follow-ups, meetings, and new leads.' },
-  clients:   { title: 'Clients',          sub: 'Manage your active client roster.' },
-  'add-client': { title: 'Create Client', sub: 'Add a new client profile to your roster.' },
-  matches:   { title: 'Match Suggestions',sub: 'AI-curated compatibility profiles.' },
-  meetings:  { title: 'Meetings',         sub: 'Scheduled introductions and consultations.' },
-  'schedule-meeting': { title: 'Schedule Meeting', sub: 'Create an introduction or consultation.' },
-  profile:   { title: 'Client Profile',   sub: 'Priya Sharma — Active client since Nov 2024.' },
-  notes:     { title: 'Notes',            sub: 'Session notes and matchmaker observations.' },
-  analytics: { title: 'Analytics',        sub: 'Performance overview for this quarter.' },
-  settings:  { title: 'Settings',         sub: 'Manage your account and preferences.' }
+  dashboard: {
+    title: "Dashboard",
+    sub: "Welcome back, Sarah. Here's what's happening today.",
+  },
+  workspace: {
+    title: "Matchmaker Workspace",
+    sub: "Your assigned clients, due follow-ups, meetings, and new leads.",
+  },
+  clients: { title: "Clients", sub: "Manage your active client roster." },
+  "add-client": {
+    title: "Create Client",
+    sub: "Add a new client profile to your roster.",
+  },
+  matches: {
+    title: "Match Suggestions",
+    sub: "AI-curated compatibility profiles.",
+  },
+  meetings: {
+    title: "Meetings",
+    sub: "Scheduled introductions and consultations.",
+  },
+  "schedule-meeting": {
+    title: "Schedule Meeting",
+    sub: "Create an introduction or consultation.",
+  },
+  profile: {
+    title: "Client Profile",
+    sub: "Priya Sharma — Active client since Nov 2024.",
+  },
+  notes: { title: "Notes", sub: "Session notes and matchmaker observations." },
+  analytics: {
+    title: "Analytics",
+    sub: "Performance overview for this quarter.",
+  },
+  settings: { title: "Settings", sub: "Manage your account and preferences." },
 };
 
 function showPage(pageId) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document
+    .querySelectorAll(".page")
+    .forEach((p) => p.classList.remove("active"));
+  document
+    .querySelectorAll(".nav-item")
+    .forEach((n) => n.classList.remove("active"));
 
-  const targetPage = document.getElementById('page-' + pageId);
+  const targetPage = document.getElementById("page-" + pageId);
   if (targetPage) {
-    targetPage.classList.add('active');
+    targetPage.classList.add("active");
     const info = pages[pageId] || {};
-    const pt = document.querySelector('.page-title');
-    const ps = document.querySelector('.page-subtitle');
-    if (pt) pt.textContent = info.title || '';
-    if (ps) ps.textContent = info.sub || '';
+    const pt = document.querySelector(".page-title");
+    const ps = document.querySelector(".page-subtitle");
+    if (pt) pt.textContent = info.title || "";
+    if (ps) ps.textContent = info.sub || "";
   }
 
   const navItem = document.querySelector(`[data-page="${pageId}"]`);
-  if (navItem) navItem.classList.add('active');
+  if (navItem) navItem.classList.add("active");
 
   // Run page-specific init
-  if (pageId === 'analytics') renderAnalytics();
-  if (pageId === 'meetings')  renderMeetingsFull();
-  if (pageId === 'workspace') renderWorkspace();
-  if (pageId === 'schedule-meeting') renderMeetingCustomerOptions();
-  if (pageId === 'matches') {
+  if (pageId === "analytics") renderAnalytics();
+  if (pageId === "meetings") renderMeetingsFull();
+  if (pageId === "workspace") renderWorkspace();
+  if (pageId === "schedule-meeting") renderMeetingCustomerOptions();
+  if (pageId === "matches") {
     loadMatchSuggestions(currentMatchCustomerId || clients[0]?.id);
   }
 
   if (window.innerWidth <= 768) {
-    sidebar && sidebar.classList.remove('mobile-open');
+    sidebar && sidebar.classList.remove("mobile-open");
   }
 
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-document.querySelectorAll('.nav-item[data-page]').forEach(item => {
-  item.addEventListener('click', e => {
+document.querySelectorAll(".nav-item[data-page]").forEach((item) => {
+  item.addEventListener("click", (e) => {
     e.preventDefault();
     showPage(item.dataset.page);
   });
@@ -347,12 +443,12 @@ document.querySelectorAll('.nav-item[data-page]').forEach(item => {
 
 /* ─── Data ──────────────────────────────────── */
 const avatarColors = [
-  { bg: 'linear-gradient(135deg,#7F1D1D,#991B1B)', color: '#F7EFC6' },
-  { bg: 'linear-gradient(135deg,#1E3A5F,#2563EB)', color: '#DBEAFE' },
-  { bg: 'linear-gradient(135deg,#14532D,#16A34A)', color: '#DCFCE7' },
-  { bg: 'linear-gradient(135deg,#713F12,#D97706)', color: '#FEF3C7' },
-  { bg: 'linear-gradient(135deg,#4C1D95,#7C3AED)', color: '#EDE9FE' },
-  { bg: 'linear-gradient(135deg,#134E4A,#0D9488)', color: '#CCFBF1' },
+  { bg: "linear-gradient(135deg,#7F1D1D,#991B1B)", color: "#F7EFC6" },
+  { bg: "linear-gradient(135deg,#1E3A5F,#2563EB)", color: "#DBEAFE" },
+  { bg: "linear-gradient(135deg,#14532D,#16A34A)", color: "#DCFCE7" },
+  { bg: "linear-gradient(135deg,#713F12,#D97706)", color: "#FEF3C7" },
+  { bg: "linear-gradient(135deg,#4C1D95,#7C3AED)", color: "#EDE9FE" },
+  { bg: "linear-gradient(135deg,#134E4A,#0D9488)", color: "#CCFBF1" },
 ];
 
 function getAvatarStyle(i) {
@@ -360,27 +456,76 @@ function getAvatarStyle(i) {
 }
 
 function initials(name) {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 let clients = [];
 let allCustomers = [];
-let activeStatusFilter = '';
-let currentMatchCustomerId = '';
+let activeStatusFilter = "";
+let currentMatchCustomerId = "";
 let matchSuggestions = [];
 
 let meetings = [
-  { day: '14', mon: 'Jan', names: 'Priya S. × Arjun M.',    time: '11:00 AM', type: '#22C55E' },
-  { day: '16', mon: 'Jan', names: 'Rohan M. × Kavya R.',    time: '03:00 PM', type: '#D4AF37' },
-  { day: '19', mon: 'Jan', names: 'Vikram S. × Sneha D.',   time: '02:30 PM', type: '#22C55E' },
-  { day: '22', mon: 'Jan', names: 'Ananya I. × Nikhil J.',  time: '10:00 AM', type: '#F59E0B' },
+  {
+    day: "14",
+    mon: "Jan",
+    names: "Priya S. × Arjun M.",
+    time: "11:00 AM",
+    type: "#22C55E",
+  },
+  {
+    day: "16",
+    mon: "Jan",
+    names: "Rohan M. × Kavya R.",
+    time: "03:00 PM",
+    type: "#D4AF37",
+  },
+  {
+    day: "19",
+    mon: "Jan",
+    names: "Vikram S. × Sneha D.",
+    time: "02:30 PM",
+    type: "#22C55E",
+  },
+  {
+    day: "22",
+    mon: "Jan",
+    names: "Ananya I. × Nikhil J.",
+    time: "10:00 AM",
+    type: "#F59E0B",
+  },
 ];
 
 const notes = [
-  { type: 'session',      date: 'Dec 18, 2024', text: 'Initial consultation conducted via video call. Client is well-settled professionally and has a clear vision of her expectations. Mentioned preference for someone with a stable career who values family deeply. Comfortable with both arranged and semi-arranged scenarios.', author: 'Sarah Reynolds' },
-  { type: 'observation',  date: 'Dec 22, 2024', text: 'After reviewing three profiles sent, client responded positively to Arjun Mehta. Highlighted that she appreciated his educational background and family values. She expressed hesitation about distance but is open to relocation if the right connection is established.', author: 'Sarah Reynolds' },
-  { type: 'followup',     date: 'Jan 3, 2025',  text: 'Follow-up call completed. Client confirmed she is comfortable with meeting Arjun Mehta in person. Meeting scheduled for January 14th. Reminded client to keep expectations open and approach the first meeting as a friendly conversation.', author: 'Sarah Reynolds' },
-  { type: 'alert',        date: 'Jan 9, 2025',  text: 'Client has requested a slight change of venue for the January 14th meeting. Confirming with Arjun\'s profile manager. Please follow up before EOD January 10th. Updated logistics will be shared with both parties.', author: 'System Alert' },
+  {
+    type: "session",
+    date: "Dec 18, 2024",
+    text: "Initial consultation conducted via video call. Client is well-settled professionally and has a clear vision of her expectations. Mentioned preference for someone with a stable career who values family deeply. Comfortable with both arranged and semi-arranged scenarios.",
+    author: "Sarah Reynolds",
+  },
+  {
+    type: "observation",
+    date: "Dec 22, 2024",
+    text: "After reviewing three profiles sent, client responded positively to Arjun Mehta. Highlighted that she appreciated his educational background and family values. She expressed hesitation about distance but is open to relocation if the right connection is established.",
+    author: "Sarah Reynolds",
+  },
+  {
+    type: "followup",
+    date: "Jan 3, 2025",
+    text: "Follow-up call completed. Client confirmed she is comfortable with meeting Arjun Mehta in person. Meeting scheduled for January 14th. Reminded client to keep expectations open and approach the first meeting as a friendly conversation.",
+    author: "Sarah Reynolds",
+  },
+  {
+    type: "alert",
+    date: "Jan 9, 2025",
+    text: "Client has requested a slight change of venue for the January 14th meeting. Confirming with Arjun's profile manager. Please follow up before EOD January 10th. Updated logistics will be shared with both parties.",
+    author: "System Alert",
+  },
 ];
 
 /* ─── Render Functions ──────────────────────── */
@@ -398,9 +543,10 @@ function renderClientTable(tbodyId) {
     `;
     return;
   }
-  tbody.innerHTML = clients.map((c, i) => {
-    const av = getAvatarStyle(i);
-    return `
+  tbody.innerHTML = clients
+    .map((c, i) => {
+      const av = getAvatarStyle(i);
+      return `
       <tr>
         <td>
           <div class="client-cell">
@@ -420,17 +566,20 @@ function renderClientTable(tbodyId) {
         </td>
       </tr>
     `;
-  }).join('');
+    })
+    .join("");
 }
 
 function renderMeetingsList() {
-  const list = document.getElementById('meetingsList');
+  const list = document.getElementById("meetingsList");
   if (!list) return;
   if (meetings.length === 0) {
     list.innerHTML = `<div class="empty-state-sm">No meetings scheduled yet.</div>`;
     return;
   }
-  list.innerHTML = meetings.map(m => `
+  list.innerHTML = meetings
+    .map(
+      (m) => `
     <div class="meeting-item">
       <div class="meeting-date-block">
         <div class="meeting-day">${m.day}</div>
@@ -442,19 +591,25 @@ function renderMeetingsList() {
       </div>
       <div class="meeting-type-dot" style="background:${m.type}"></div>
     </div>
-  `).join('');
+  `,
+    )
+    .join("");
 }
 
 function renderWorkspace() {
   const assignedClients = allCustomers.length || clients.length;
-  const followupsDue = allCustomers.filter(c => c.status === 'matched' || c.status === 'pending').length;
+  const followupsDue = allCustomers.filter(
+    (c) => c.status === "matched" || c.status === "pending",
+  ).length;
   const meetingsToday = meetings.length;
-  const newLeads = allCustomers.filter(c => c.statusTag === 'New Lead').length;
+  const newLeads = allCustomers.filter(
+    (c) => c.statusTag === "New Lead",
+  ).length;
 
-  setText('workspaceAssignedClients', assignedClients);
-  setText('workspaceFollowupsDue', followupsDue);
-  setText('workspaceMeetingsToday', meetingsToday);
-  setText('workspaceNewLeads', newLeads);
+  setText("workspaceAssignedClients", assignedClients);
+  setText("workspaceFollowupsDue", followupsDue);
+  setText("workspaceMeetingsToday", meetingsToday);
+  setText("workspaceNewLeads", newLeads);
   renderWorkspacePriorityQueue();
   renderWorkspaceAgenda();
   renderWorkspacePulse();
@@ -466,7 +621,7 @@ function workspaceCustomers() {
 }
 
 function renderWorkspacePriorityQueue() {
-  const list = document.getElementById('workspacePriorityList');
+  const list = document.getElementById("workspacePriorityList");
   if (!list) return;
 
   const priority = [...workspaceCustomers()]
@@ -481,26 +636,28 @@ function renderWorkspacePriorityQueue() {
     return;
   }
 
-  list.innerHTML = priority.map((client, index) => {
-    const av = getAvatarStyle(index);
-    return `
+  list.innerHTML = priority
+    .map((client, index) => {
+      const av = getAvatarStyle(index);
+      return `
       <div class="workspace-priority-item">
         <div class="workspace-person">
           <div class="workspace-avatar" style="background:${av.bg};color:${av.color}">${initials(client.name)}</div>
           <div>
             <div class="workspace-name">${escapeHtml(client.name)}</div>
-            <div class="workspace-meta">${escapeHtml(client.city || 'Location pending')} · ${escapeHtml(client.statusTag || 'Profile Review')}</div>
+            <div class="workspace-meta">${escapeHtml(client.city || "Location pending")} · ${escapeHtml(client.statusTag || "Profile Review")}</div>
           </div>
         </div>
-        <span class="workspace-status-pill ${escapeHtml(client.status)}">${escapeHtml(capitalize(client.status || 'active'))}</span>
+        <span class="workspace-status-pill ${escapeHtml(client.status)}">${escapeHtml(capitalize(client.status || "active"))}</span>
         <button class="row-action-btn" onclick="viewClientById('${escapeHtml(client.id)}')">Open</button>
       </div>
     `;
-  }).join('');
+    })
+    .join("");
 }
 
 function renderWorkspaceAgenda() {
-  const list = document.getElementById('workspaceAgendaList');
+  const list = document.getElementById("workspaceAgendaList");
   if (!list) return;
 
   const agenda = meetings.slice(0, 4);
@@ -509,7 +666,9 @@ function renderWorkspaceAgenda() {
     return;
   }
 
-  list.innerHTML = agenda.map(meeting => `
+  list.innerHTML = agenda
+    .map(
+      (meeting) => `
     <div class="workspace-agenda-item">
       <div class="workspace-agenda-date">
         <strong>${escapeHtml(meeting.day)}</strong>
@@ -517,70 +676,86 @@ function renderWorkspaceAgenda() {
       </div>
       <div>
         <div class="workspace-name">${escapeHtml(meeting.names)}</div>
-        <div class="workspace-meta">${escapeHtml(meeting.time)} · ${escapeHtml(meeting.meetingType || 'Introduction Meeting')}</div>
+        <div class="workspace-meta">${escapeHtml(meeting.time)} · ${escapeHtml(meeting.meetingType || "Introduction Meeting")}</div>
       </div>
     </div>
-  `).join('');
+  `,
+    )
+    .join("");
 }
 
 function renderWorkspacePulse() {
-  const pulse = document.getElementById('workspacePulse');
+  const pulse = document.getElementById("workspacePulse");
   if (!pulse) return;
 
   const customers = workspaceCustomers();
-  const count = status => customers.filter(c => c.status === status).length;
+  const count = (status) => customers.filter((c) => c.status === status).length;
   const groups = [
-    ['Pending', count('pending')],
-    ['Active', count('active')],
-    ['Matched', count('matched')],
-    ['Meetings', meetings.length],
+    ["Pending", count("pending")],
+    ["Active", count("active")],
+    ["Matched", count("matched")],
+    ["Meetings", meetings.length],
   ];
 
-  pulse.innerHTML = groups.map(([label, value]) => `
+  pulse.innerHTML = groups
+    .map(
+      ([label, value]) => `
     <div class="pulse-card">
       <span>${label}</span>
       <strong>${value}</strong>
     </div>
-  `).join('');
+  `,
+    )
+    .join("");
 }
 
 function renderWorkspaceActivity() {
-  const stream = document.getElementById('workspaceActivityStream');
+  const stream = document.getElementById("workspaceActivityStream");
   if (!stream) return;
 
   const customers = workspaceCustomers();
   const newest = customers.slice(-1)[0];
   const nextMeeting = meetings[0];
-  const activeCount = customers.filter(c => c.status === 'active').length;
+  const activeCount = customers.filter((c) => c.status === "active").length;
   const items = [
     {
-      tag: 'Intake',
-      title: newest ? `${newest.name} joined the roster` : 'Roster ready for intake',
-      meta: newest ? `${newest.city || 'City pending'} · ${newest.statusTag}` : 'Create a client to begin'
+      tag: "Intake",
+      title: newest
+        ? `${newest.name} joined the roster`
+        : "Roster ready for intake",
+      meta: newest
+        ? `${newest.city || "City pending"} · ${newest.statusTag}`
+        : "Create a client to begin",
     },
     {
-      tag: 'Calendar',
-      title: nextMeeting ? nextMeeting.names : 'No upcoming introductions',
-      meta: nextMeeting ? `${nextMeeting.day} ${nextMeeting.mon} · ${nextMeeting.time}` : 'Schedule the first meeting'
+      tag: "Calendar",
+      title: nextMeeting ? nextMeeting.names : "No upcoming introductions",
+      meta: nextMeeting
+        ? `${nextMeeting.day} ${nextMeeting.mon} · ${nextMeeting.time}`
+        : "Schedule the first meeting",
     },
     {
-      tag: 'Search',
+      tag: "Search",
       title: `${activeCount} active searches in progress`,
-      meta: 'Use matches to shortlist introductions'
+      meta: "Use matches to shortlist introductions",
     },
   ];
 
-  stream.innerHTML = items.map(item => `
+  stream.innerHTML = items
+    .map(
+      (item) => `
     <div class="workspace-activity-item">
       <span class="workspace-activity-tag">${escapeHtml(item.tag)}</span>
       <div class="workspace-name">${escapeHtml(item.title)}</div>
       <div class="workspace-meta">${escapeHtml(item.meta)}</div>
     </div>
-  `).join('');
+  `,
+    )
+    .join("");
 }
 
 function renderMatchSuggestions() {
-  const grid = document.getElementById('matchesGrid');
+  const grid = document.getElementById("matchesGrid");
   if (!grid) return;
   if (matchSuggestions.length === 0) {
     grid.innerHTML = `
@@ -591,20 +766,31 @@ function renderMatchSuggestions() {
     `;
     return;
   }
-  grid.innerHTML = matchSuggestions.map((m, i) => {
-    const av = getAvatarStyle(i + 1);
-    const facts = m.facts.map(f => `
+  grid.innerHTML = matchSuggestions
+    .map((m, i) => {
+      const av = getAvatarStyle(i + 1);
+      const facts = m.facts
+        .map(
+          (f) => `
       <div class="match-fact">
         <div class="match-fact-label">${escapeHtml(f[0])}</div>
         <div>${escapeHtml(f[1])}</div>
       </div>
-    `).join('');
-    const reasons = (m.explanation || []).map(reason => `
+    `,
+        )
+        .join("");
+      const reasons = (m.explanation || [])
+        .map(
+          (reason) => `
       <li>${escapeHtml(reason)}</li>
-    `).join('');
-    return `
-      <div class="match-card ${m.high ? 'high-compat' : ''}">
-        <span class="match-compat-badge ${m.compat >= 85 ? 'compat-high' : 'compat-med'}">${m.compat}% Match</span>
+    `,
+        )
+        .join("");
+      const matchKey = buildMatchKey(currentMatchCustomerId, m.id);
+      const hasSaved = getIntrosForMatch(matchKey).length > 0;
+      return `
+      <div class="match-card ${m.high ? "high-compat" : ""}">
+        <span class="match-compat-badge ${m.compat >= 85 ? "compat-high" : "compat-med"}">${m.compat}% Match</span>
         <div class="match-avatar" style="background:${av.bg};color:${av.color}">${initials(m.name)}</div>
         <div class="match-name">${escapeHtml(m.name)}</div>
         <div class="match-sub">${escapeHtml(m.sub)}</div>
@@ -624,12 +810,17 @@ function renderMatchSuggestions() {
         <div class="why-match-panel">
           <ul>${reasons}</ul>
         </div>
+        <button class="gen-intro-btn ${hasSaved ? "has-saved" : ""}" type="button" data-customer-id="${escapeHtml(currentMatchCustomerId)}" data-match-id="${escapeHtml(m.id)}" data-match-name="${escapeHtml(m.name)}" data-compat="${m.compat}">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4H12C12.6 4 13 4.4 13 5V11C13 11.6 12.6 12 12 12H7L4 14V5C4 4.4 4.4 4 4 4Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M6 7H10M6 9.5H8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          ${hasSaved ? "✦ Introduction Saved" : "Generate Introduction"}
+        </button>
         <button class="send-match-btn" onclick="handleSendMatch(this)">
           ✦ Send Match Introduction
         </button>
       </div>
     `;
-  }).join('');
+    })
+    .join("");
 }
 
 function loadMatchSuggestions(customerId) {
@@ -641,19 +832,19 @@ function loadMatchSuggestions(customerId) {
 
   currentMatchCustomerId = customerId;
   return fetch(`/api/customers/${encodeURIComponent(customerId)}/matches/`)
-    .then(response => {
+    .then((response) => {
       if (!response.ok) {
         throw new Error(`Match API request failed with ${response.status}`);
       }
       return response.json();
     })
-    .then(data => {
+    .then((data) => {
       matchSuggestions = data;
       renderMatchSuggestions();
       return data;
     })
-    .catch(err => {
-      console.error('Error fetching match suggestions:', err);
+    .catch((err) => {
+      console.error("Error fetching match suggestions:", err);
       matchSuggestions = [];
       renderMatchSuggestions();
       return [];
@@ -663,20 +854,22 @@ function loadMatchSuggestions(customerId) {
 function toggleMatchReasons(btn) {
   const panel = btn.nextElementSibling;
   if (!panel) return;
-  const isOpen = panel.classList.toggle('open');
-  btn.classList.toggle('open', isOpen);
+  const isOpen = panel.classList.toggle("open");
+  btn.classList.toggle("open", isOpen);
 }
 
 function handleSendMatch(btn) {
-  if (btn.classList.contains('sent')) return;
-  btn.textContent = 'Introduction Sent ✓';
-  btn.classList.add('sent');
+  if (btn.classList.contains("sent")) return;
+  btn.textContent = "Introduction Sent ✓";
+  btn.classList.add("sent");
 }
 
 function renderNotesTimeline() {
-  const timeline = document.getElementById('notesTimeline');
+  const timeline = document.getElementById("notesTimeline");
   if (!timeline) return;
-  timeline.innerHTML = notes.map(n => `
+  timeline.innerHTML = notes
+    .map(
+      (n) => `
     <div class="note-card">
       <div class="note-card-header">
         <span class="note-type-tag ${n.type}">${capitalize(n.type)}</span>
@@ -685,23 +878,53 @@ function renderNotesTimeline() {
       <p class="note-text">${n.text}</p>
       <p class="note-author">— ${n.author}</p>
     </div>
-  `).join('');
+  `,
+    )
+    .join("");
 }
 
 function renderMeetingsFullStaticArchive() {
-  const list = document.getElementById('meetingsFullList');
+  const list = document.getElementById("meetingsFullList");
   if (!list || list.children.length > 0) return;
   const allMeetings = [
-    ...meetings.map(m => ({ ...m, status: 'scheduled' })),
-    { day: '08', mon: 'Dec', names: 'Sneha D. × Rahul G.', time: '04:00 PM', status: 'completed' },
-    { day: '15', mon: 'Dec', names: 'Rohan M. × Aisha B.', time: '12:00 PM', status: 'completed' },
-    { day: '28', mon: 'Dec', names: 'Kavya R. × Siddharth P.', time: '05:00 PM', status: 'cancelled' },
+    ...meetings.map((m) => ({ ...m, status: "scheduled" })),
+    {
+      day: "08",
+      mon: "Dec",
+      names: "Sneha D. × Rahul G.",
+      time: "04:00 PM",
+      status: "completed",
+    },
+    {
+      day: "15",
+      mon: "Dec",
+      names: "Rohan M. × Aisha B.",
+      time: "12:00 PM",
+      status: "completed",
+    },
+    {
+      day: "28",
+      mon: "Dec",
+      names: "Kavya R. × Siddharth P.",
+      time: "05:00 PM",
+      status: "cancelled",
+    },
   ];
 
-  const statusClass = { scheduled: 'msb-scheduled', completed: 'msb-completed', cancelled: 'msb-cancelled' };
-  const statusLabel = { scheduled: 'Scheduled', completed: 'Completed', cancelled: 'Cancelled' };
+  const statusClass = {
+    scheduled: "msb-scheduled",
+    completed: "msb-completed",
+    cancelled: "msb-cancelled",
+  };
+  const statusLabel = {
+    scheduled: "Scheduled",
+    completed: "Completed",
+    cancelled: "Cancelled",
+  };
 
-  list.innerHTML = allMeetings.map(m => `
+  list.innerHTML = allMeetings
+    .map(
+      (m) => `
     <div class="meeting-full-card">
       <div class="meeting-full-date">
         <div class="mfd-day">${m.day}</div>
@@ -713,21 +936,33 @@ function renderMeetingsFullStaticArchive() {
       </div>
       <span class="meeting-status-badge ${statusClass[m.status]}">${statusLabel[m.status]}</span>
     </div>
-  `).join('');
+  `,
+    )
+    .join("");
 }
 
 function renderMeetingsFull() {
-  const list = document.getElementById('meetingsFullList');
+  const list = document.getElementById("meetingsFullList");
   if (!list) return;
   if (meetings.length === 0) {
     list.innerHTML = `<div class="meeting-full-card"><div class="meeting-full-info"><div class="mf-title">No meetings scheduled yet</div><div class="mf-meta">Use Schedule Meeting to create the first one.</div></div></div>`;
     return;
   }
 
-  const statusClass = { scheduled: 'msb-scheduled', completed: 'msb-completed', cancelled: 'msb-cancelled' };
-  const statusLabel = { scheduled: 'Scheduled', completed: 'Completed', cancelled: 'Cancelled' };
+  const statusClass = {
+    scheduled: "msb-scheduled",
+    completed: "msb-completed",
+    cancelled: "msb-cancelled",
+  };
+  const statusLabel = {
+    scheduled: "Scheduled",
+    completed: "Completed",
+    cancelled: "Cancelled",
+  };
 
-  list.innerHTML = meetings.map(m => `
+  list.innerHTML = meetings
+    .map(
+      (m) => `
     <div class="meeting-full-card">
       <div class="meeting-full-date">
         <div class="mfd-day">${escapeHtml(m.day)}</div>
@@ -735,48 +970,60 @@ function renderMeetingsFull() {
       </div>
       <div class="meeting-full-info">
         <div class="mf-title">${escapeHtml(m.names)}</div>
-        <div class="mf-meta">${escapeHtml(m.time)} · ${escapeHtml(m.meetingType || 'Introduction Meeting')}</div>
+        <div class="mf-meta">${escapeHtml(m.time)} · ${escapeHtml(m.meetingType || "Introduction Meeting")}</div>
       </div>
-      <span class="meeting-status-badge ${statusClass[m.status] || statusClass.scheduled}">${statusLabel[m.status] || 'Scheduled'}</span>
+      <span class="meeting-status-badge ${statusClass[m.status] || statusClass.scheduled}">${statusLabel[m.status] || "Scheduled"}</span>
     </div>
-  `).join('');
+  `,
+    )
+    .join("");
 }
 
 function renderAnalytics() {
-  const barChart = document.getElementById('barChart');
-  const barLabels = document.getElementById('barLabels');
+  const barChart = document.getElementById("barChart");
+  const barLabels = document.getElementById("barLabels");
   if (barChart && barLabels && barChart.children.length === 0) {
     const monthData = [
-      { mon: 'Oct', val: 18 },
-      { mon: 'Nov', val: 24 },
-      { mon: 'Dec', val: 31 },
-      { mon: 'Jan', val: 22 },
+      { mon: "Oct", val: 18 },
+      { mon: "Nov", val: 24 },
+      { mon: "Dec", val: 31 },
+      { mon: "Jan", val: 22 },
     ];
 
-    const max = Math.max(...monthData.map(d => d.val));
+    const max = Math.max(...monthData.map((d) => d.val));
 
-    barChart.innerHTML = monthData.map((d, i) => `
+    barChart.innerHTML = monthData
+      .map(
+        (d, i) => `
       <div class="bar-item">
         <div class="bar-val">${d.val}</div>
-        <div class="bar-fill ${i === 2 ? 'gold' : ''}" style="height:${Math.round((d.val / max) * 100)}%"></div>
+        <div class="bar-fill ${i === 2 ? "gold" : ""}" style="height:${Math.round((d.val / max) * 100)}%"></div>
       </div>
-    `).join('');
+    `,
+      )
+      .join("");
 
-    barLabels.innerHTML = monthData.map(d => `
+    barLabels.innerHTML = monthData
+      .map(
+        (d) => `
       <div class="bar-label">${d.mon}</div>
-    `).join('');
+    `,
+      )
+      .join("");
   }
 
-  const demoList = document.getElementById('demoList');
+  const demoList = document.getElementById("demoList");
   if (demoList && demoList.children.length === 0) {
     const demos = [
-      { label: '25–30 yrs', pct: 38 },
-      { label: '31–35 yrs', pct: 44 },
-      { label: '36–40 yrs', pct: 14 },
-      { label: '41+ yrs',   pct:  4 },
+      { label: "25–30 yrs", pct: 38 },
+      { label: "31–35 yrs", pct: 44 },
+      { label: "36–40 yrs", pct: 14 },
+      { label: "41+ yrs", pct: 4 },
     ];
 
-    demoList.innerHTML = demos.map(d => `
+    demoList.innerHTML = demos
+      .map(
+        (d) => `
       <div class="demo-item">
         <span class="demo-label">${d.label}</span>
         <div class="demo-track">
@@ -784,37 +1031,71 @@ function renderAnalytics() {
         </div>
         <span class="demo-pct">${d.pct}%</span>
       </div>
-    `).join('');
+    `,
+      )
+      .join("");
   }
 
   renderFunnel();
 }
 
 function renderFunnel() {
-  const funnelList = document.getElementById('funnelList');
+  const funnelList = document.getElementById("funnelList");
   if (!funnelList) return;
 
   const customers = allCustomers.length ? allCustomers : clients;
   const total = customers.length || 1;
-  const countWhere = predicate => customers.filter(predicate).length;
-  const activeOrLater = ['Active Search', 'Matches Sent', 'Meeting Scheduled', 'Engagement In Progress', 'Closed'];
-  const matchOrLater = ['Matches Sent', 'Meeting Scheduled', 'Engagement In Progress', 'Closed'];
-  const meetingOrLater = ['Meeting Scheduled', 'Engagement In Progress', 'Closed'];
-
-  const stages = [
-    { label: 'Lead Created', count: customers.length },
-    { label: 'Verified', count: countWhere(c => c.statusTag !== 'New Lead') },
-    { label: 'Active Search', count: countWhere(c => activeOrLater.includes(c.statusTag)) },
-    { label: 'Match Sent', count: countWhere(c => matchOrLater.includes(c.statusTag)) },
-    { label: 'Meeting Scheduled', count: countWhere(c => meetingOrLater.includes(c.statusTag)) },
-    { label: 'Engagement', count: countWhere(c => c.statusTag === 'Engagement In Progress' || c.statusTag === 'Closed') },
-    { label: 'Married', count: countWhere(c => c.statusTag === 'Closed') },
+  const countWhere = (predicate) => customers.filter(predicate).length;
+  const activeOrLater = [
+    "Active Search",
+    "Matches Sent",
+    "Meeting Scheduled",
+    "Engagement In Progress",
+    "Closed",
+  ];
+  const matchOrLater = [
+    "Matches Sent",
+    "Meeting Scheduled",
+    "Engagement In Progress",
+    "Closed",
+  ];
+  const meetingOrLater = [
+    "Meeting Scheduled",
+    "Engagement In Progress",
+    "Closed",
   ];
 
-  funnelList.innerHTML = stages.map((stage, index) => {
-    const pct = Math.max(4, Math.round((stage.count / total) * 100));
-    const arrow = index < stages.length - 1 ? '<span class="funnel-arrow">→</span>' : '';
-    return `
+  const stages = [
+    { label: "Lead Created", count: customers.length },
+    { label: "Verified", count: countWhere((c) => c.statusTag !== "New Lead") },
+    {
+      label: "Active Search",
+      count: countWhere((c) => activeOrLater.includes(c.statusTag)),
+    },
+    {
+      label: "Match Sent",
+      count: countWhere((c) => matchOrLater.includes(c.statusTag)),
+    },
+    {
+      label: "Meeting Scheduled",
+      count: countWhere((c) => meetingOrLater.includes(c.statusTag)),
+    },
+    {
+      label: "Engagement",
+      count: countWhere(
+        (c) =>
+          c.statusTag === "Engagement In Progress" || c.statusTag === "Closed",
+      ),
+    },
+    { label: "Married", count: countWhere((c) => c.statusTag === "Closed") },
+  ];
+
+  funnelList.innerHTML = stages
+    .map((stage, index) => {
+      const pct = Math.max(4, Math.round((stage.count / total) * 100));
+      const arrow =
+        index < stages.length - 1 ? '<span class="funnel-arrow">→</span>' : "";
+      return `
       <div class="funnel-item">
         <div class="funnel-row">
           <span class="funnel-label">${stage.label}</span>
@@ -826,7 +1107,8 @@ function renderFunnel() {
         </div>
       </div>
     `;
-  }).join('');
+    })
+    .join("");
 }
 
 /* ─── Dynamic Profile Renderer ─────────────── */
@@ -840,7 +1122,7 @@ function viewClient(index) {
 
   // Avatar
   const av = getAvatarStyle(index);
-  const profileAvatar = document.querySelector('.profile-avatar');
+  const profileAvatar = document.querySelector(".profile-avatar");
   if (profileAvatar) {
     profileAvatar.textContent = initials(c.name);
     profileAvatar.style.background = av.bg;
@@ -848,10 +1130,10 @@ function viewClient(index) {
   }
 
   // Name & location
-  const profileName = document.querySelector('.profile-name');
+  const profileName = document.querySelector(".profile-name");
   if (profileName) profileName.textContent = c.name;
 
-  const profileLoc = document.querySelector('.profile-loc');
+  const profileLoc = document.querySelector(".profile-loc");
   if (profileLoc) {
     profileLoc.innerHTML = `
       <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1C4.8 1 3 2.8 3 5C3 8 7 13 7 13C7 13 11 8 11 5C11 2.8 9.2 1 7 1Z" stroke="currentColor" stroke-width="1.2"/><circle cx="7" cy="5" r="1.5" stroke="currentColor" stroke-width="1.2"/></svg>
@@ -860,14 +1142,14 @@ function viewClient(index) {
   }
 
   // Status badge
-  const statusBadge = document.querySelector('.profile-status-badge');
+  const statusBadge = document.querySelector(".profile-status-badge");
   if (statusBadge) {
     statusBadge.textContent = `${capitalize(c.status)} Client`;
-    statusBadge.className = `profile-status-badge ${c.status === 'active' ? 'active-badge' : c.status === 'matched' ? 'matched-badge' : 'pending-badge'}`;
+    statusBadge.className = `profile-status-badge ${c.status === "active" ? "active-badge" : c.status === "matched" ? "matched-badge" : "pending-badge"}`;
   }
 
   // Personal info grid
-  const infoGrids = document.querySelectorAll('.info-grid');
+  const infoGrids = document.querySelectorAll(".info-grid");
   if (infoGrids[0]) {
     infoGrids[0].innerHTML = `
       <div class="info-item"><span class="info-label">Full Name</span><span class="info-val">${c.name}</span></div>
@@ -880,8 +1162,13 @@ function viewClient(index) {
   }
 
   // Professional info grid — use matchmaking pool data if available
-  const poolProfile = (window.maleProfiles || []).concat(window.femaleProfiles || [])
-    .find(p => p.firstName === c.name.split(' ')[0] && p.lastName === c.name.split(' ')[1]);
+  const poolProfile = (window.maleProfiles || [])
+    .concat(window.femaleProfiles || [])
+    .find(
+      (p) =>
+        p.firstName === c.name.split(" ")[0] &&
+        p.lastName === c.name.split(" ")[1],
+    );
 
   if (infoGrids[1] && poolProfile) {
     infoGrids[1].innerHTML = `
@@ -923,34 +1210,46 @@ function viewClient(index) {
   }
 
   // Profile tags
-  const profileTags = document.querySelector('.profile-tags');
+  const profileTags = document.querySelector(".profile-tags");
   if (profileTags && poolProfile) {
-    profileTags.innerHTML = [poolProfile.religion, poolProfile.education, poolProfile.maritalStatus, poolProfile.languages[0]]
-      .map(t => `<span class="tag">${t}</span>`).join('');
+    profileTags.innerHTML = [
+      poolProfile.religion,
+      poolProfile.education,
+      poolProfile.maritalStatus,
+      poolProfile.languages[0],
+    ]
+      .map((t) => `<span class="tag">${t}</span>`)
+      .join("");
   }
 
   renderProfileCompletion(c, poolProfile);
 
   // Status tag in timeline section
-  const statusTimeline = document.getElementById('matchmakingStatusTimeline');
+  const statusTimeline = document.getElementById("matchmakingStatusTimeline");
   if (statusTimeline) {
-    const statusStep = capitalize(c.status === 'active' ? 'Active Search' : c.status === 'matched' ? 'Matches Sent' : 'Profile Review');
+    const statusStep = capitalize(
+      c.status === "active"
+        ? "Active Search"
+        : c.status === "matched"
+          ? "Matches Sent"
+          : "Profile Review",
+    );
     statusTimeline.innerHTML = `
       <div class="timeline-step done">
         <div class="step-dot"></div>
         <div class="step-body"><p class="step-title">Profile Onboarded</p><p class="step-date">${c.updated}</p></div>
       </div>
-      <div class="timeline-step ${c.status === 'active' || c.status === 'matched' ? 'done' : 'active'}">
-        <div class="step-dot ${c.status === 'pending' ? 'pulse' : ''}"></div>
-        <div class="step-body"><p class="step-title">Initial Consultation</p><p class="step-date">${c.status !== 'pending' ? 'Completed' : 'Pending'}</p></div>
+      <div class="timeline-step ${c.status === "active" || c.status === "matched" ? "done" : "active"}">
+        <div class="step-dot ${c.status === "pending" ? "pulse" : ""}"></div>
+        <div class="step-body"><p class="step-title">Initial Consultation</p><p class="step-date">${c.status !== "pending" ? "Completed" : "Pending"}</p></div>
       </div>
-      <div class="timeline-step ${c.status === 'matched' ? 'done' : c.status === 'active' ? 'active' : 'pending'}">
-        <div class="step-dot ${c.status === 'active' ? 'pulse' : ''}"></div>
-        <div class="step-body"><p class="step-title">${statusStep}</p><p class="step-date">${c.status === 'matched' ? 'Matches sent' : c.status === 'active' ? 'In Progress' : 'Pending'}</p></div>
+      <div class="timeline-step ${c.status === "matched" ? "done" : c.status === "active" ? "active" : "pending"}">
+        <div class="step-dot ${c.status === "active" ? "pulse" : ""}"></div>
+        <div class="step-body"><p class="step-title">${statusStep}</p><p class="step-date">${c.status === "matched" ? "Matches sent" : c.status === "active" ? "In Progress" : "Pending"}</p></div>
       </div>
-      <div class="timeline-step ${c.status === 'matched' ? 'active' : 'pending'}">
-        <div class="step-dot ${c.status === 'matched' ? 'pulse' : ''}"></div>
-        <div class="step-body"><p class="step-title">Meeting Scheduled</p><p class="step-date">${c.status === 'matched' ? 'Upcoming' : 'Pending'}</p></div>
+      <div class="timeline-step ${c.status === "matched" ? "active" : "pending"}">
+        <div class="step-dot ${c.status === "matched" ? "pulse" : ""}"></div>
+        <div class="step-body"><p class="step-title">Meeting Scheduled</p><p class="step-date">${c.status === "matched" ? "Upcoming" : "Pending"}</p></div>
       </div>
       <div class="timeline-step pending">
         <div class="step-dot"></div>
@@ -962,39 +1261,43 @@ function viewClient(index) {
   renderCustomerActivityTimeline(c);
 
   // Update matches page sub-heading
-  const matchesSub = document.querySelector('#page-matches .matches-header p');
-  if (matchesSub) matchesSub.textContent = `AI-curated compatibility matches for ${c.name}`;
+  const matchesSub = document.querySelector("#page-matches .matches-header p");
+  if (matchesSub)
+    matchesSub.textContent = `AI-curated compatibility matches for ${c.name}`;
   currentMatchCustomerId = c.id;
   loadMatchSuggestions(c.id);
 
-  showPage('profile');
+  showPage("profile");
 }
 
 function viewClientById(clientId) {
-  const index = clients.findIndex(c => c.id === clientId);
+  const index = clients.findIndex((c) => c.id === clientId);
   if (index >= 0) {
     viewClient(index);
     return;
   }
-  loadCustomers()
-    .then(() => {
-      const loadedIndex = clients.findIndex(c => c.id === clientId);
-      if (loadedIndex >= 0) viewClient(loadedIndex);
-    });
+  loadCustomers().then(() => {
+    const loadedIndex = clients.findIndex((c) => c.id === clientId);
+    if (loadedIndex >= 0) viewClient(loadedIndex);
+  });
 }
 
 function renderProfileCompletion(customer, poolProfile) {
   const completion = calculateProfileCompletion(customer, poolProfile);
-  const value = document.getElementById('profileCompletionValue');
-  const fill = document.getElementById('profileCompletionFill');
-  const sections = document.getElementById('profileCompletionSections');
+  const value = document.getElementById("profileCompletionValue");
+  const fill = document.getElementById("profileCompletionFill");
+  const sections = document.getElementById("profileCompletionSections");
 
   if (value) value.textContent = `${completion.score}% Complete`;
   if (fill) fill.style.width = `${completion.score}%`;
   if (sections) {
-    sections.innerHTML = completion.sections.map(section => `
-      <span title="${escapeHtml(section.complete ? 'Complete' : 'Incomplete')}">${escapeHtml(section.label)}</span>
-    `).join('');
+    sections.innerHTML = completion.sections
+      .map(
+        (section) => `
+      <span title="${escapeHtml(section.complete ? "Complete" : "Incomplete")}">${escapeHtml(section.label)}</span>
+    `,
+      )
+      .join("");
   }
 }
 
@@ -1002,76 +1305,101 @@ function calculateProfileCompletion(customer, poolProfile) {
   const profile = poolProfile || customer;
   const sections = [
     {
-      label: 'Basic Information',
+      label: "Basic Information",
       weight: 20,
-      complete: hasValues(customer.name, customer.age, customer.city, customer.email, customer.gender)
+      complete: hasValues(
+        customer.name,
+        customer.age,
+        customer.city,
+        customer.email,
+        customer.gender,
+      ),
     },
     {
-      label: 'Family Information',
+      label: "Family Information",
       weight: 15,
-      complete: hasValues(profile.religion, profile.caste, profile.maritalStatus || customer.maritalStatus)
+      complete: hasValues(
+        profile.religion,
+        profile.caste,
+        profile.maritalStatus || customer.maritalStatus,
+      ),
     },
     {
-      label: 'Career',
+      label: "Career",
       weight: 20,
-      complete: hasValues(profile.education, profile.income, profile.company, profile.designation)
+      complete: hasValues(
+        profile.education,
+        profile.income,
+        profile.company,
+        profile.designation,
+      ),
     },
     {
-      label: 'Preferences',
+      label: "Preferences",
       weight: 27,
-      complete: hasValues(profile.wantsKids, profile.openToRelocate, profile.openToPets)
+      complete: hasValues(
+        profile.wantsKids,
+        profile.openToRelocate,
+        profile.openToPets,
+      ),
     },
     {
-      label: 'Photos',
+      label: "Photos",
       weight: 20,
-      complete: Boolean(profile.photo || profile.photoUrl || profile.avatarUrl)
-    }
+      complete: Boolean(profile.photo || profile.photoUrl || profile.avatarUrl),
+    },
   ];
 
-  const score = sections.reduce((total, section) => total + (section.complete ? section.weight : 0), 0);
+  const score = sections.reduce(
+    (total, section) => total + (section.complete ? section.weight : 0),
+    0,
+  );
   return { score, sections };
 }
 
 function hasValues(...values) {
-  return values.every(value => value !== undefined && value !== null && String(value).trim() !== '');
+  return values.every(
+    (value) =>
+      value !== undefined && value !== null && String(value).trim() !== "",
+  );
 }
 
 function renderCustomerActivityTimeline(customer) {
-  const activityTimeline = document.getElementById('customerActivityTimeline');
+  const activityTimeline = document.getElementById("customerActivityTimeline");
   if (!activityTimeline) return;
 
-  const isPending = customer.status === 'pending';
-  const isActive = customer.status === 'active';
-  const isMatched = customer.status === 'matched';
-  const isInactive = customer.status === 'inactive';
+  const isPending = customer.status === "pending";
+  const isActive = customer.status === "active";
+  const isMatched = customer.status === "matched";
+  const isInactive = customer.status === "inactive";
 
   activityTimeline.innerHTML = `
     <div class="timeline-step done">
       <div class="step-dot"></div>
       <div class="step-body"><p class="step-title">Profile Created</p><p class="step-date">${customer.updated}</p></div>
     </div>
-    <div class="timeline-step ${isPending ? 'active' : 'done'}">
-      <div class="step-dot ${isPending ? 'pulse' : ''}"></div>
-      <div class="step-body"><p class="step-title">Consultation Completed</p><p class="step-date">${isPending ? 'In Progress' : 'Completed'}</p></div>
+    <div class="timeline-step ${isPending ? "active" : "done"}">
+      <div class="step-dot ${isPending ? "pulse" : ""}"></div>
+      <div class="step-body"><p class="step-title">Consultation Completed</p><p class="step-date">${isPending ? "In Progress" : "Completed"}</p></div>
     </div>
-    <div class="timeline-step ${isMatched || isActive ? 'done' : 'pending'}">
+    <div class="timeline-step ${isMatched || isActive ? "done" : "pending"}">
       <div class="step-dot"></div>
-      <div class="step-body"><p class="step-title">Match Sent</p><p class="step-date">${isMatched || isActive ? 'Sent to client' : 'Pending'}</p></div>
+      <div class="step-body"><p class="step-title">Match Sent</p><p class="step-date">${isMatched || isActive ? "Sent to client" : "Pending"}</p></div>
     </div>
-    <div class="timeline-step ${isMatched ? 'done' : isActive ? 'active' : 'pending'}">
-      <div class="step-dot ${isActive ? 'pulse' : ''}"></div>
-      <div class="step-body"><p class="step-title">Meeting Scheduled</p><p class="step-date">${isMatched ? 'Scheduled' : isActive ? 'In Progress' : 'Pending'}</p></div>
+    <div class="timeline-step ${isMatched ? "done" : isActive ? "active" : "pending"}">
+      <div class="step-dot ${isActive ? "pulse" : ""}"></div>
+      <div class="step-body"><p class="step-title">Meeting Scheduled</p><p class="step-date">${isMatched ? "Scheduled" : isActive ? "In Progress" : "Pending"}</p></div>
     </div>
-    <div class="timeline-step ${isInactive ? 'done' : isMatched ? 'active' : 'pending'}">
-      <div class="step-dot ${isMatched ? 'pulse' : ''}"></div>
-      <div class="step-body"><p class="step-title">Feedback Received</p><p class="step-date">${isInactive ? 'Received' : isMatched ? 'Awaiting feedback' : 'Pending'}</p></div>
+    <div class="timeline-step ${isInactive ? "done" : isMatched ? "active" : "pending"}">
+      <div class="step-dot ${isMatched ? "pulse" : ""}"></div>
+      <div class="step-body"><p class="step-title">Feedback Received</p><p class="step-date">${isInactive ? "Received" : isMatched ? "Awaiting feedback" : "Pending"}</p></div>
     </div>
   `;
 }
 
 /* ─── KPI Counter Animation ─────────────────── */
 function animateCounters() {
-  document.querySelectorAll('.kpi-value[data-target]').forEach(el => {
+  document.querySelectorAll(".kpi-value[data-target]").forEach((el) => {
     const target = parseInt(el.dataset.target, 10);
     const duration = 900;
     const step = 16;
@@ -1087,50 +1415,58 @@ function animateCounters() {
 }
 
 /* ─── Notes UI ──────────────────────────────── */
-const addNoteBtn   = document.getElementById('addNoteBtn');
-const noteCompose  = document.getElementById('noteCompose');
-const cancelNote   = document.getElementById('cancelNote');
-const saveNote     = document.getElementById('saveNote');
-const noteText     = document.getElementById('noteText');
-const noteType     = document.getElementById('noteType');
-const notesTimeline= document.getElementById('notesTimeline');
+const addNoteBtn = document.getElementById("addNoteBtn");
+const noteCompose = document.getElementById("noteCompose");
+const cancelNote = document.getElementById("cancelNote");
+const saveNote = document.getElementById("saveNote");
+const noteText = document.getElementById("noteText");
+const noteType = document.getElementById("noteType");
+const notesTimeline = document.getElementById("notesTimeline");
 
-addNoteBtn && addNoteBtn.addEventListener('click', () => {
-  noteCompose.style.display = 'block';
-  noteText.focus();
-});
+addNoteBtn &&
+  addNoteBtn.addEventListener("click", () => {
+    noteCompose.style.display = "block";
+    noteText.focus();
+  });
 
-cancelNote && cancelNote.addEventListener('click', () => {
-  noteCompose.style.display = 'none';
-  noteText.value = '';
-});
+cancelNote &&
+  cancelNote.addEventListener("click", () => {
+    noteCompose.style.display = "none";
+    noteText.value = "";
+  });
 
-saveNote && saveNote.addEventListener('click', () => {
-  const text = noteText.value.trim();
-  if (!text) return;
-  const type = noteType ? noteType.value : 'session';
-  const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-  const newNote = {
-    type, date: today,
-    text,
-    author: window._currentUserName || 'Matchmaker'
-  };
-  notes.unshift(newNote);
-  renderNotesTimeline();
-  noteCompose.style.display = 'none';
-  noteText.value = '';
-  newNote.author = window._currentUserName || newNote.author;
-});
+saveNote &&
+  saveNote.addEventListener("click", () => {
+    const text = noteText.value.trim();
+    if (!text) return;
+    const type = noteType ? noteType.value : "session";
+    const today = new Date().toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+    const newNote = {
+      type,
+      date: today,
+      text,
+      author: window._currentUserName || "Matchmaker",
+    };
+    notes.unshift(newNote);
+    renderNotesTimeline();
+    noteCompose.style.display = "none";
+    noteText.value = "";
+    newNote.author = window._currentUserName || newNote.author;
+  });
 
 /* ─── Directory Filters ─────────────────────── */
 function getDirectoryFilters() {
   return {
     status: activeStatusFilter,
-    gender: document.getElementById('genderFilter')?.value || '',
-    city: document.getElementById('cityFilter')?.value || '',
-    religion: document.getElementById('religionFilter')?.value || '',
-    marital_status: document.getElementById('maritalFilter')?.value || '',
-    sort_age: document.getElementById('ageSort')?.value || ''
+    gender: document.getElementById("genderFilter")?.value || "",
+    city: document.getElementById("cityFilter")?.value || "",
+    religion: document.getElementById("religionFilter")?.value || "",
+    marital_status: document.getElementById("maritalFilter")?.value || "",
+    sort_age: document.getElementById("ageSort")?.value || "",
   };
 }
 
@@ -1140,7 +1476,7 @@ function customerApiUrl(filters = {}) {
     if (value) params.append(key, value);
   });
   const query = params.toString();
-  return query ? `/api/customers/?${query}` : '/api/customers/';
+  return query ? `/api/customers/?${query}` : "/api/customers/";
 }
 
 function populateFilterSelect(selectId, values) {
@@ -1148,32 +1484,33 @@ function populateFilterSelect(selectId, values) {
   if (!select) return;
   const firstOption = select.options[0];
   const selectedValue = select.value;
-  select.innerHTML = '';
+  select.innerHTML = "";
   select.appendChild(firstOption);
-  values.forEach(value => {
+  values.forEach((value) => {
     if (!value) return;
-    const option = document.createElement('option');
+    const option = document.createElement("option");
     option.value = value;
     option.textContent = value;
     select.appendChild(option);
   });
-  select.value = values.includes(selectedValue) ? selectedValue : '';
+  select.value = values.includes(selectedValue) ? selectedValue : "";
 }
 
 function populateDirectoryFilters(data) {
-  const uniqueSorted = key => [...new Set(data.map(c => c[key]).filter(Boolean))].sort();
-  populateFilterSelect('genderFilter', uniqueSorted('gender'));
-  populateFilterSelect('cityFilter', uniqueSorted('city'));
-  populateFilterSelect('religionFilter', uniqueSorted('religion'));
-  populateFilterSelect('maritalFilter', uniqueSorted('maritalStatus'));
+  const uniqueSorted = (key) =>
+    [...new Set(data.map((c) => c[key]).filter(Boolean))].sort();
+  populateFilterSelect("genderFilter", uniqueSorted("gender"));
+  populateFilterSelect("cityFilter", uniqueSorted("city"));
+  populateFilterSelect("religionFilter", uniqueSorted("religion"));
+  populateFilterSelect("maritalFilter", uniqueSorted("maritalStatus"));
 }
 
 function applyCustomerData(data) {
   clients = data;
-  window.maleProfiles = clients.filter(c => c.gender === 'Male');
-  window.femaleProfiles = clients.filter(c => c.gender === 'Female');
-  renderClientTable('clientTableBody');
-  renderClientTable('clientTableBody2');
+  window.maleProfiles = clients.filter((c) => c.gender === "Male");
+  window.femaleProfiles = clients.filter((c) => c.gender === "Female");
+  renderClientTable("clientTableBody");
+  renderClientTable("clientTableBody2");
   renderMeetingCustomerOptions();
   updateDashboardMetrics();
   renderWorkspace();
@@ -1182,18 +1519,18 @@ function applyCustomerData(data) {
 
 function loadCustomers(filters = {}) {
   return fetch(customerApiUrl(filters))
-    .then(response => {
+    .then((response) => {
       if (!response.ok) {
         throw new Error(`Customer API request failed with ${response.status}`);
       }
       return response.json();
     })
-    .then(data => {
+    .then((data) => {
       applyCustomerData(data);
       return data;
     })
-    .catch(err => {
-      console.error('Error fetching customer database:', err);
+    .catch((err) => {
+      console.error("Error fetching customer database:", err);
       applyCustomerData([]);
       return [];
     });
@@ -1202,70 +1539,87 @@ function loadCustomers(filters = {}) {
 function initDirectoryFilters() {
   populateDirectoryFilters(allCustomers);
 
-  document.querySelectorAll('.filter-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      tab.closest('.filter-tabs').querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      activeStatusFilter = tab.dataset.status || '';
+  document.querySelectorAll(".filter-tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      tab
+        .closest(".filter-tabs")
+        .querySelectorAll(".filter-tab")
+        .forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+      activeStatusFilter = tab.dataset.status || "";
       loadCustomers(getDirectoryFilters());
     });
   });
 
-  ['genderFilter', 'cityFilter', 'religionFilter', 'maritalFilter', 'ageSort'].forEach(id => {
+  [
+    "genderFilter",
+    "cityFilter",
+    "religionFilter",
+    "maritalFilter",
+    "ageSort",
+  ].forEach((id) => {
     const control = document.getElementById(id);
-    control && control.addEventListener('change', () => {
-      loadCustomers(getDirectoryFilters());
-    });
+    control &&
+      control.addEventListener("change", () => {
+        loadCustomers(getDirectoryFilters());
+      });
   });
 }
 
 /* ─── Search ────────────────────────────────── */
-const searchInput = document.getElementById('searchInput');
-searchInput && searchInput.addEventListener('input', e => {
-  const q = e.target.value.toLowerCase();
-  document.querySelectorAll('#clientTableBody tr, #clientTableBody2 tr').forEach(row => {
-    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+const searchInput = document.getElementById("searchInput");
+searchInput &&
+  searchInput.addEventListener("input", (e) => {
+    const q = e.target.value.toLowerCase();
+    document
+      .querySelectorAll("#clientTableBody tr, #clientTableBody2 tr")
+      .forEach((row) => {
+        row.style.display = row.textContent.toLowerCase().includes(q)
+          ? ""
+          : "none";
+      });
   });
-});
 
 /* ─── Entrance Animations ───────────────────── */
 function observeAnimations() {
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach((entry, idx) => {
-      if (entry.isIntersecting) {
-        setTimeout(() => entry.target.classList.add('in-view'), idx * 80);
-        io.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.15 });
-  document.querySelectorAll('[data-animate]').forEach(el => io.observe(el));
+  const io = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry, idx) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add("in-view"), idx * 80);
+          io.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.15 },
+  );
+  document.querySelectorAll("[data-animate]").forEach((el) => io.observe(el));
 }
 
 /* ─── Init ──────────────────────────────────── */
 function init() {
   initForms();
-  Promise.all([loadCustomers(), loadMeetings()])
-    .then(([data]) => {
-      allCustomers = data;
-      initDirectoryFilters();
-      renderWorkspace();
+  Promise.all([loadCustomers(), loadMeetings()]).then(([data]) => {
+    allCustomers = data;
+    initDirectoryFilters();
+    renderWorkspace();
 
-      // Initial Render calls
-      if (clients[0]) {
-        currentMatchCustomerId = clients[0].id;
-        loadMatchSuggestions(currentMatchCustomerId);
-      } else {
-        renderMatchSuggestions();
-      }
-      renderNotesTimeline();
-      observeAnimations();
-      setTimeout(animateCounters, 300);
-      initAuth();
-      initNotifications();
-    });
+    // Initial Render calls
+    if (clients[0]) {
+      currentMatchCustomerId = clients[0].id;
+      loadMatchSuggestions(currentMatchCustomerId);
+    } else {
+      renderMatchSuggestions();
+    }
+    renderNotesTimeline();
+    observeAnimations();
+    setTimeout(animateCounters, 300);
+    initAuth();
+    initNotifications();
+  });
 }
 
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener("DOMContentLoaded", init);
 
 /* ─── Utility ───────────────────────────────── */
 function capitalize(str) {
@@ -1273,23 +1627,23 @@ function capitalize(str) {
 }
 
 function escapeHtml(value) {
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function loadAllCustomers() {
-  return fetch('/api/customers/')
-    .then(response => {
+  return fetch("/api/customers/")
+    .then((response) => {
       if (!response.ok) {
         throw new Error(`Customer API request failed with ${response.status}`);
       }
       return response.json();
     })
-    .then(data => {
+    .then((data) => {
       allCustomers = data;
       populateDirectoryFilters(allCustomers);
       return data;
@@ -1297,14 +1651,14 @@ function loadAllCustomers() {
 }
 
 function loadMeetings() {
-  return fetch('/api/meetings/')
-    .then(response => {
+  return fetch("/api/meetings/")
+    .then((response) => {
       if (!response.ok) {
         throw new Error(`Meeting API request failed with ${response.status}`);
       }
       return response.json();
     })
-    .then(data => {
+    .then((data) => {
       meetings = data;
       renderMeetingsList();
       renderMeetingsFull();
@@ -1312,8 +1666,8 @@ function loadMeetings() {
       renderWorkspace();
       return data;
     })
-    .catch(err => {
-      console.error('Error fetching meetings:', err);
+    .catch((err) => {
+      console.error("Error fetching meetings:", err);
       meetings = [];
       renderMeetingsList();
       renderMeetingsFull();
@@ -1325,22 +1679,26 @@ function loadMeetings() {
 
 function updateDashboardMetrics() {
   const source = allCustomers.length ? allCustomers : clients;
-  const scheduledMeetings = meetings.filter(m => m.status === 'scheduled').length;
-  const pendingReviews = source.filter(c => c.status === 'pending').length;
+  const scheduledMeetings = meetings.filter(
+    (m) => m.status === "scheduled",
+  ).length;
+  const pendingReviews = source.filter((c) => c.status === "pending").length;
 
-  setCounterValue('Total Clients', source.length);
-  setCounterValue('Meetings Scheduled', scheduledMeetings);
-  setCounterValue('Pending Reviews', pendingReviews);
+  setCounterValue("Total Clients", source.length);
+  setCounterValue("Meetings Scheduled", scheduledMeetings);
+  setCounterValue("Pending Reviews", pendingReviews);
 
-  const clientsBadge = document.querySelector('.nav-item[data-page="clients"] .nav-badge');
+  const clientsBadge = document.querySelector(
+    '.nav-item[data-page="clients"] .nav-badge',
+  );
   if (clientsBadge) clientsBadge.textContent = source.length;
 }
 
 function setCounterValue(label, value) {
-  const cards = document.querySelectorAll('.kpi-card');
-  cards.forEach(card => {
-    const labelEl = card.querySelector('.kpi-label');
-    const valueEl = card.querySelector('.kpi-value');
+  const cards = document.querySelectorAll(".kpi-card");
+  cards.forEach((card) => {
+    const labelEl = card.querySelector(".kpi-label");
+    const valueEl = card.querySelector(".kpi-value");
     if (labelEl?.textContent.trim() === label && valueEl) {
       valueEl.dataset.target = value;
       valueEl.textContent = value;
@@ -1349,38 +1707,50 @@ function setCounterValue(label, value) {
 }
 
 function renderMeetingCustomerOptions() {
-  const selects = [document.getElementById('meetingCustomerSelect'), document.getElementById('meetingCandidateSelect')];
-  if (selects.every(select => !select)) return;
+  const selects = [
+    document.getElementById("meetingCustomerSelect"),
+    document.getElementById("meetingCandidateSelect"),
+  ];
+  if (selects.every((select) => !select)) return;
 
   const options = (allCustomers.length ? allCustomers : clients)
-    .map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)} · ${escapeHtml(c.city || '')}</option>`)
-    .join('');
+    .map(
+      (c) =>
+        `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)} · ${escapeHtml(c.city || "")}</option>`,
+    )
+    .join("");
 
-  selects.forEach(select => {
+  selects.forEach((select) => {
     if (!select) return;
     const selected = select.value;
-    const first = select.querySelector('option')?.outerHTML || '<option value="">Select client</option>';
+    const first =
+      select.querySelector("option")?.outerHTML ||
+      '<option value="">Select client</option>';
     select.innerHTML = first + options;
-    select.value = [...select.options].some(option => option.value === selected) ? selected : '';
+    select.value = [...select.options].some(
+      (option) => option.value === selected,
+    )
+      ? selected
+      : "";
   });
 }
 
 function getCookie(name) {
-  const cookies = document.cookie ? document.cookie.split(';') : [];
+  const cookies = document.cookie ? document.cookie.split(";") : [];
   for (const cookie of cookies) {
     const trimmed = cookie.trim();
     if (trimmed.startsWith(`${name}=`)) {
       return decodeURIComponent(trimmed.slice(name.length + 1));
     }
   }
-  return '';
+  return "";
 }
 
 function formDataToPayload(form) {
   return Object.fromEntries(new FormData(form).entries());
 }
 
-function setFormMessage(id, text, type = '') {
+function setFormMessage(id, text, type = "") {
   const el = document.getElementById(id);
   if (!el) return;
   el.textContent = text;
@@ -1389,13 +1759,13 @@ function setFormMessage(id, text, type = '') {
 
 function postJson(url, payload) {
   return fetch(url, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': getCookie('csrftoken'),
+      "Content-Type": "application/json",
+      "X-CSRFToken": getCookie("csrftoken"),
     },
     body: JSON.stringify(payload),
-  }).then(async response => {
+  }).then(async (response) => {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       throw new Error(data.error || `Request failed with ${response.status}`);
@@ -1405,54 +1775,409 @@ function postJson(url, payload) {
 }
 
 function initForms() {
-  const addClientForm = document.getElementById('addClientForm');
-  addClientForm && addClientForm.addEventListener('submit', event => {
-    event.preventDefault();
-    setFormMessage('addClientMessage', 'Creating client...');
+  const addClientForm = document.getElementById("addClientForm");
+  addClientForm &&
+    addClientForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      setFormMessage("addClientMessage", "Creating client...");
 
-    postJson('/api/customers/', formDataToPayload(addClientForm))
-      .then(customer => {
-        setFormMessage('addClientMessage', `${customer.name} has been added to the roster.`, 'success');
-        addClientForm.reset();
-        addNotification('client', `New client created: ${customer.name}.`);
-        return loadAllCustomers()
-          .then(() => loadCustomers(getDirectoryFilters()))
-          .then(() => {
-            const newIndex = clients.findIndex(c => c.id === customer.id);
-            if (newIndex >= 0) {
-              viewClient(newIndex);
-            } else {
-              showPage('clients');
-            }
-          });
-      })
-      .catch(err => setFormMessage('addClientMessage', err.message, 'error'));
-  });
+      postJson("/api/customers/", formDataToPayload(addClientForm))
+        .then((customer) => {
+          setFormMessage(
+            "addClientMessage",
+            `${customer.name} has been added to the roster.`,
+            "success",
+          );
+          addClientForm.reset();
+          addNotification("client", `New client created: ${customer.name}.`);
+          return loadAllCustomers()
+            .then(() => loadCustomers(getDirectoryFilters()))
+            .then(() => {
+              const newIndex = clients.findIndex((c) => c.id === customer.id);
+              if (newIndex >= 0) {
+                viewClient(newIndex);
+              } else {
+                showPage("clients");
+              }
+            });
+        })
+        .catch((err) =>
+          setFormMessage("addClientMessage", err.message, "error"),
+        );
+    });
 
-  const scheduleMeetingForm = document.getElementById('scheduleMeetingForm');
-  scheduleMeetingForm && scheduleMeetingForm.addEventListener('submit', event => {
-    event.preventDefault();
-    const payload = formDataToPayload(scheduleMeetingForm);
-    if (payload.customerId === payload.candidateId) {
-      setFormMessage('scheduleMeetingMessage', 'Choose two different clients for a meeting.', 'error');
-      return;
-    }
+  const scheduleMeetingForm = document.getElementById("scheduleMeetingForm");
+  scheduleMeetingForm &&
+    scheduleMeetingForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const payload = formDataToPayload(scheduleMeetingForm);
+      if (payload.customerId === payload.candidateId) {
+        setFormMessage(
+          "scheduleMeetingMessage",
+          "Choose two different clients for a meeting.",
+          "error",
+        );
+        return;
+      }
 
-    setFormMessage('scheduleMeetingMessage', 'Scheduling meeting...');
-    postJson('/api/meetings/', payload)
-      .then(meeting => {
-        setFormMessage('scheduleMeetingMessage', 'Meeting scheduled and dashboard updated.', 'success');
-        scheduleMeetingForm.reset();
-        addNotification('meeting', `Meeting scheduled: ${meeting.names} at ${meeting.time}.`);
-        return Promise.all([loadMeetings(), loadAllCustomers()])
-          .then(() => loadCustomers(getDirectoryFilters()))
-          .then(() => showPage('meetings'));
-      })
-      .catch(err => setFormMessage('scheduleMeetingMessage', err.message, 'error'));
-  });
+      setFormMessage("scheduleMeetingMessage", "Scheduling meeting...");
+      postJson("/api/meetings/", payload)
+        .then((meeting) => {
+          setFormMessage(
+            "scheduleMeetingMessage",
+            "Meeting scheduled and dashboard updated.",
+            "success",
+          );
+          scheduleMeetingForm.reset();
+          addNotification(
+            "meeting",
+            `Meeting scheduled: ${meeting.names} at ${meeting.time}.`,
+          );
+          return Promise.all([loadMeetings(), loadAllCustomers()])
+            .then(() => loadCustomers(getDirectoryFilters()))
+            .then(() => showPage("meetings"));
+        })
+        .catch((err) =>
+          setFormMessage("scheduleMeetingMessage", err.message, "error"),
+        );
+    });
 }
 
 function setText(id, value) {
   const el = document.getElementById(id);
   if (el) el.textContent = value;
+}
+
+/* ─── Generate Introduction Feature ─────────── */
+
+const INTRO_STORE_KEY = "soulsync_intro_messages";
+
+function getIntroStore() {
+  try {
+    return JSON.parse(localStorage.getItem(INTRO_STORE_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveIntroToStore(matchKey, entry) {
+  const store = getIntroStore();
+  if (!store[matchKey]) store[matchKey] = [];
+  store[matchKey].unshift(entry);
+  store[matchKey] = store[matchKey].slice(0, 10);
+  localStorage.setItem(INTRO_STORE_KEY, JSON.stringify(store));
+}
+
+function getIntrosForMatch(matchKey) {
+  return getIntroStore()[matchKey] || [];
+}
+
+let _introModalMatchKey = "";
+let _introModalMatchName = "";
+let _introModalMessage = "";
+
+function buildMatchKey(customerId, candidateId) {
+  return `${customerId}_${candidateId}`;
+}
+
+function openIntroModal(
+  customerId,
+  matchId,
+  matchName,
+  compat,
+) {
+  _introModalMatchKey = buildMatchKey(customerId, matchId);
+  _introModalMatchName = matchName;
+  _introModalMessage = "";
+
+  const backdrop = document.getElementById("introModalBackdrop");
+  const sub = document.getElementById("introModalSub");
+  const compatRow = document.getElementById("introCompatRow");
+  const loading = document.getElementById("introLoading");
+  const msgBox = document.getElementById("introMessageBox");
+  const footer = document.getElementById("introModalFooter");
+  const savedBadge = document.getElementById("introSavedBadge");
+  const copyBtn = document.getElementById("introCopyBtn");
+
+  sub.textContent = `For ${matchName} · ${compat}% compatibility`;
+  msgBox.classList.remove("visible");
+  msgBox.textContent = "";
+  footer.style.display = "none";
+  savedBadge.style.display = "none";
+  if (copyBtn) {
+    copyBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5" stroke="currentColor" stroke-width="1.5"/></svg> Copy to Clipboard`;
+    copyBtn.classList.remove("copied");
+  }
+
+  // Get match data from matchSuggestions
+  const match = matchSuggestions.find((m) => m.id === matchId);
+  if (match) {
+    const reasons = match.explanation || [];
+    compatRow.innerHTML = reasons
+      .slice(0, 6)
+      .map((r) => `<span class="intro-compat-chip">${escapeHtml(r)}</span>`)
+      .join("");
+  }
+
+  backdrop.classList.add("open");
+  document.body.style.overflow = "hidden";
+
+  renderIntroHistory();
+  generateIntroMessage(
+    customerId,
+    matchId,
+    matchName,
+    compat,
+  );
+}
+
+function closeIntroModal() {
+  document.getElementById("introModalBackdrop").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+async function generateIntroMessage(
+  customerId,
+  matchId,
+  matchName,
+  compat,
+) {
+  const loading = document.getElementById("introLoading");
+  const msgBox = document.getElementById("introMessageBox");
+  const footer = document.getElementById("introModalFooter");
+
+  loading.style.display = "flex";
+  msgBox.classList.remove("visible");
+  footer.style.display = "none";
+
+  const customerName =
+    (allCustomers.length ? allCustomers : clients).find(
+      (c) => c.id === customerId,
+    )?.name || "Our client";
+
+  // Get match data from matchSuggestions
+  const match = matchSuggestions.find((m) => m.id === matchId);
+  const reasons = match?.explanation || [];
+  const matchFacts = match?.facts || [];
+
+  const factsText = (matchFacts || [])
+    .map(([label, val]) => `${label}: ${val}`)
+    .join(", ");
+  const reasonsText = (reasons || []).join("; ");
+
+  const prompt = `You are a professional matchmaker writing a warm, personalised introduction letter on behalf of a matchmaking agency called SoulSync AI.
+
+Write a short, elegant introduction message (3-4 paragraphs, ~150-200 words) that a matchmaker would send to a client about a potential match.
+
+Client being introduced: ${customerName}
+Proposed match: ${matchName}
+Compatibility score: ${compat}%
+Match details: ${factsText}
+Compatibility reasons: ${reasonsText}
+
+Guidelines:
+- Start with a warm, professional greeting
+- Mention why this specific pairing makes sense, referencing 2-3 of the compatibility reasons
+- Keep the tone warm, hopeful, and professional — not salesy
+- End with a gentle invitation to consider the introduction
+- Do NOT include subject lines, sign-offs, or placeholders in brackets
+- Write in third person about the match candidate`;
+
+  // try {
+  //   const response = await fetch('https://api.anthropic.com/v1/messages', {
+  //     method: 'POST',
+  //     headers: { 'Content-Type': 'application/json' },
+  //     body: JSON.stringify({
+  //       model: 'claude-sonnet-4-20250514',
+  //       max_tokens: 1000,
+  //       messages: [{ role: 'user', content: prompt }]
+  //     })
+  //   });
+
+  //   const data = await response.json();
+  //   const text = (data.content || []).map(b => b.text || '').join('');
+
+  //   loading.style.display = 'none';
+  //   msgBox.textContent    = text;
+  //   msgBox.classList.add('visible');
+  //   footer.style.display  = 'flex';
+  //   _introModalMessage    = text;
+
+  //   const entry = {
+  //     message: text,
+  //     compat,
+  //     matchName,
+  //     date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+  //     time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  //   };
+  //   saveIntroToStore(_introModalMatchKey, entry);
+
+  //   const savedBadge = document.getElementById('introSavedBadge');
+  //   if (savedBadge) {
+  //     savedBadge.style.display = 'flex';
+  //     setTimeout(() => { savedBadge.style.display = 'none'; }, 3000);
+  //   }
+  //   renderIntroHistory();
+
+  // } catch (err) {
+  //   loading.style.display = 'none';
+  //   msgBox.textContent    = 'Sorry, the introduction could not be generated at this time. Please try again.';
+  //   msgBox.classList.add('visible');
+  //   footer.style.display  = 'flex';
+  //   console.error('Intro generation error:', err);
+  // }
+  const text = `
+Hi ${customerName},
+
+We are pleased to introduce ${matchName} as a potential match.
+
+This recommendation was generated based on a compatibility score of ${compat}%.
+
+Key strengths include:
+${(reasons || [])
+  .slice(0, 3)
+  .map((r) => `• ${r}`)
+  .join("\n")}
+
+We encourage you to review this profile and consider an introductory conversation.
+
+Warm regards,
+SoulSync AI
+`;
+
+  loading.style.display = "none";
+  msgBox.textContent = text;
+  msgBox.classList.add("visible");
+  footer.style.display = "flex";
+  _introModalMessage = text;
+}
+
+function renderIntroHistory() {
+  const section = document.getElementById("introHistorySection");
+  const list = document.getElementById("introHistoryList");
+  if (!section || !list) return;
+
+  const history = getIntrosForMatch(_introModalMatchKey);
+  if (history.length === 0) {
+    section.style.display = "none";
+    return;
+  }
+
+  section.style.display = "block";
+  list.innerHTML = history
+    .map(
+      (h) => `
+    <div class="intro-history-item">
+      ${escapeHtml(h.message.slice(0, 200))}${h.message.length > 200 ? "…" : ""}
+      <div class="intro-history-meta">${escapeHtml(h.date)} at ${escapeHtml(h.time || "")}</div>
+    </div>
+  `,
+    )
+    .join("");
+}
+
+// Delegated click handler for Generate Introduction buttons
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".gen-intro-btn");
+  if (!btn) return;
+
+  const customerId = btn.dataset.customerId;
+  const matchId = btn.dataset.matchId;
+  const matchName = btn.dataset.matchName;
+  const compat = Number(btn.dataset.compat);
+
+  openIntroModal(customerId, matchId, matchName, compat);
+});
+
+function initIntroModalEvents() {
+  const backdrop = document.getElementById("introModalBackdrop");
+  const modal = document.getElementById("introModal");
+  const closeBtn = document.getElementById("introModalClose");
+  const copyBtn = document.getElementById("introCopyBtn");
+  const regenBtn = document.getElementById("introRegenerateBtn");
+
+  closeBtn && closeBtn.addEventListener("click", closeIntroModal);
+
+  backdrop &&
+    backdrop.addEventListener("click", (e) => {
+      if (!modal.contains(e.target)) closeIntroModal();
+    });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && backdrop?.classList.contains("open"))
+      closeIntroModal();
+  });
+
+  copyBtn &&
+    copyBtn.addEventListener("click", () => {
+      if (!_introModalMessage) return;
+      navigator.clipboard.writeText(_introModalMessage).then(() => {
+        copyBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7.5L5 10.5L12 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Copied!`;
+        copyBtn.classList.add("copied");
+        setTimeout(() => {
+          copyBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5" stroke="currentColor" stroke-width="1.5"/></svg> Copy to Clipboard`;
+          copyBtn.classList.remove("copied");
+        }, 2500);
+      });
+    });
+
+  regenBtn &&
+    regenBtn.addEventListener("click", () => {
+      if (!_introModalMatchKey) return;
+      const [customerId, matchId] = _introModalMatchKey.split("_");
+      const match = matchSuggestions.find((m) => m.id === matchId);
+      if (match)
+        generateIntroMessage(
+          customerId,
+          matchId,
+          match.name,
+          match.compat,
+        );
+    });
+}
+
+
+
+document.addEventListener("DOMContentLoaded", initIntroModalEvents);
+
+// function generateIntroduction(customer, candidate, score) {
+
+//     const modal = document.getElementById("introModalBackdrop");
+//     const messageBox = document.getElementById("introMessageBox");
+//     const footer = document.getElementById("introModalFooter");
+
+//     const message = `
+// Hi ${customer.name},
+
+// Based on our compatibility analysis, we believe ${candidate.name}
+// may be an excellent match for you.
+
+// Compatibility Score: ${score}%
+
+// Key strengths:
+// • Similar values and lifestyle preferences
+// • Compatible long-term relationship goals
+// • Strong communication potential
+
+// We recommend beginning with an introductory conversation.
+
+// Best Regards,
+// SoulSync AI
+// `;
+
+//     messageBox.textContent = message;
+
+//     footer.style.display = "flex";
+//     modal.classList.add("show");
+// }
+
+// const closeBtn = document.getElementById("introModalClose");
+// const backdrop = document.getElementById("introModalBackdrop");
+
+// closeBtn.addEventListener("click", () => {
+//     backdrop.classList.remove("show");
+// });
+
+function generateIntroduction() {
+  console.log("BUTTON CLICKED");
 }
