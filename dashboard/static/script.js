@@ -35,13 +35,6 @@ function applyUserToUI(user) {
 
   // Topbar avatar
   const topbarAvatar = document.getElementById("topbarAvatar");
-  const menu = document.getElementById("dropdownMenu");
-
-  if (topbarAvatar && menu) {
-    topbarAvatar.addEventListener("click", () => {
-      menu.classList.toggle("show");
-    });
-  }
   if (topbarAvatar) topbarAvatar.textContent = initials2;
 
   // Dashboard welcome subtitle
@@ -153,6 +146,55 @@ function initAuth() {
   } else {
     showAuthModal();
   }
+}
+
+function initProfileDropdown() {
+  const topbarAvatar = document.getElementById("topbarAvatar");
+  const menu = document.getElementById("dropdownMenu");
+
+  console.log("Avatar:", topbarAvatar);
+  console.log("Menu:", menu);
+
+  if (!topbarAvatar || !menu) return;
+  if (topbarAvatar.dataset.dropdownBound === "true") return;
+
+  topbarAvatar.dataset.dropdownBound = "true";
+  topbarAvatar.setAttribute("role", "button");
+  topbarAvatar.setAttribute("tabindex", "0");
+  topbarAvatar.setAttribute("aria-haspopup", "true");
+  topbarAvatar.setAttribute("aria-expanded", "false");
+
+  const closeMenu = () => {
+    menu.classList.remove("show");
+    topbarAvatar.setAttribute("aria-expanded", "false");
+  };
+
+  const toggleMenu = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const shouldOpen = !menu.classList.contains("show");
+    menu.classList.toggle("show", shouldOpen);
+    topbarAvatar.setAttribute("aria-expanded", String(shouldOpen));
+  };
+
+  topbarAvatar.addEventListener("click", toggleMenu);
+  topbarAvatar.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      toggleMenu(event);
+    }
+  });
+
+  menu.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
+
+  document.addEventListener("click", closeMenu);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeMenu();
+  });
+
+  console.log("Profile dropdown click handler attached");
 }
 
 /* ─── Notifications ──────────────────────────── */
@@ -1905,6 +1947,7 @@ function observeAnimations() {
 
 /* ─── Init ──────────────────────────────────── */
 function init() {
+  initProfileDropdown();
   initForms();
   Promise.all([loadCustomers(), loadMeetings()]).then(([data]) => {
     allCustomers = data;

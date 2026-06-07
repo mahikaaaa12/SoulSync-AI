@@ -388,6 +388,10 @@ img {
   border: 1.5px solid var(--ivory);
 }
 
+.topbar-avatar-container {
+  position: relative;
+}
+
 .topbar-avatar {
   width: 36px;
   height: 36px;
